@@ -1,0 +1,14 @@
+#+LaTeX_header: \usepackage{listings}
+#+LaTeX_header: \usepackage{amsmath}
+#+LaTeX_header: \usepackage{amssymb}
+#+LaTeX_header: \usepackage{physics}
+#+LaTeX_header: \usepackage{cancel}
+#+LaTeX_header: \usepackage{mathrsfs}
+
+#+LaTeX_header: \usepackage[margin=3cm]{geometry}
+
+#+LaTeX_header: \usepackage{amsthm}
+#+LaTeX_header: \theoremstyle{definition}
+#+LaTeX_header: \newtheorem{definition}{Definition}[section]
+
+#+LaTeX_header: \DeclareMathOperator{\tr}{Tr}

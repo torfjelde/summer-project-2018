@@ -1,0 +1,172 @@
+#+SETUPFILE: ../setup.org
+#+AUTHOR: Tor Erlend Fjelde
+#+Title: Maximum Entropy Models
+
+* Background
+** Shannon / Information Entropy
+Let $X$ be a /discrete/ random variable, i.e. taking values from a at most countable sample space $\Omega_X$. The probability mass of $X$ is defined by $p_X: \mathscr{P}(\Omega_X) \to [0, 1]$ such that $\sum_{x \in \Omega_X} p_X(x) = 1$, where we use the notation $\mathscr{P}(\Omega_X)$ to mean the /powerset of $\Omega_X$/. The probability measure $P_X$ is then
+\begin{equation*}
+P_X(A) = \sum_{x \in A}^{} p_X(x), \quad \forall A \subseteq \Omega_X
+\end{equation*}
+We will refer to the triple $\big(P, \Omega_X, \mathscr{P}(\Omega_X) \big)$ as a /probability space/.[fn:2]
+
+Now suppose we want to define some function which describes the /information/ obtained from observing some event $A \subseteq \Omega_X$. Intuitively one would expect such a function, denoted $S_p$, to have the following properties:
+1. $S_p$ is /monotonically decreasing/ in $P$, i.e. if $P(A)$ is large, we gain little information by observing $A$,
+2. $S_p(A) \ge 0, \quad \forall A \subseteq \Omega_X$, i.e. information is a non-negative quantity,
+3. if $p_X(A) = 1$ for some $A \subseteq \Omega_X$, then $S_p (A) = 0$, i.e. events with probability 1 provides no information,
+4. if $X$ and $Y$ are two /independent/ random variables with probability masses $p_X$ and $p_Y$, respectively, then on the extended probability space $\big(P_X P_Y, \Omega_X \times \Omega_Y, \mathscr{P}(\Omega_X \times \Omega_Y) \big)$
+   \begin{equation*}
+   S_p(A \times B) = S_p(A) + S_p(B), \quad \forall A \subseteq \Omega_X, B \subseteq \Omega_Y,
+   \end{equation*}
+   i.e. joint information of independent events are added together.[fn:1]
+It turns out that this is satisfied by the following definition of $S_p$.cite:mackay2003information
+#+name: def:shannon-entropy
+#+begin_definition :title ""
+The *Shannon entropy* or *information entropy* $S_p$ over a discrete probability space $\big(P, \Omega, \mathscr{P}(\Omega) \big)$ is defined
+\begin{equation*}
+S_p(A) = - \sum_{x \in A}^{} p(x) \log p(x), \quad \forall A \subseteq \Omega
+\end{equation*}
+/Note that this is true for any probability space, hence entropy might also be defined for subsets of $\mathscr{P}(\Omega)$ for which we have an adapted probability measure./
+#+end_definition
+
+It is interesting to note that $S_p$ is /minimized/ when $p(x) = 1$ and $p(y) = 0$ for all $y \ne x$, as we would be certain of the outcome, and /maximized/ if $p(x) = p(y)$, i.e. $p$ is the uniform distribution, where all outcomes are equally likely. This coincides with what one would untuitively expect from a measure of information, where taking on the uniform distribution is the sensible thing to do when we have no prior information.
+
+*** Continuous random variables
+Shannon also introduced entropy of probability densities of /continuous/ random variables by simply substituting the summation in Definition ref:def:shannon-entropy by an integrand over all $x$. Unfortunately this continuous extension is not invariant under transformation, unlike $S_p$ in the discrete case. This also means that it allows /negative/ information, not satisfying the first axiom of information entropy.cite:jaynes1968prior
+
+#+name: def:continuous-entropy
+#+begin_definition :title ""
+Jaynes provided the following definition for the continuous case
+
+\begin{equation*}
+H_p = - \int \dd{x} p(x) \log \frac{p(x)}{m(x)}
+\end{equation*}
+where $m(x)$, called an /invariant measure/, is proportional to the limiting density of discrete points.cite:jaynes1968prior
+#+end_definition
+
+* Maximum Entropy models
+** Principle of Maximum Entropy
+Suppose we have a $N$ /samples/ $\mathcal{X} = \{ \mathbf{x}_i \in \mathbb{R}^d, \forall i = 1, \dots, N \}$ of a /discrete/ random vector $\mathbf{X}$, drawn from a probability density $p(\mathbf{x})$, and we want to estimate $p$ from $\mathcal{X}$. Let $q(\mathbf{x})$ denote our estimate of $p(\mathbf{x})$; that is, $q$ is our /model/.
+
+In this case, the *Principle of Maximum Entropy* states that one should choose $q$ with the /largest uncertainty/; that is, choose $q$ such that
+\begin{equation*}
+\max_{q'} S_{q'} \big( \mathcal{X} \big) = S_q \big( \mathcal{X} \big)
+\end{equation*}
+subject to constraints that the expectations of some /observed/ functions $\{ f_i: \mathbb{R}^d \to \mathbb{R} \}$ under our estimate $q$ are equal to their /observed/ expectations under the $p$.cite:mehta18_high_bias_low_varian_introd 
+Formally,
+
+\begin{equation*}
+\label{eqn:principle-of-max-ent}
+\begin{aligned}
+& \underset{q}{\text{minimize}}
+& & - S_q(\mathcal{X}) \\
+& \text{subject to}
+& & \sum_{\mathbf{x}}^{} q(\mathbf{x}) = 1, \quad \left\langle f_i \right\rangle_{\mathcal{X}} = \mathbb{E}_q[f_i], \; i = 1, \ldots, k.
+\end{aligned}
+\end{equation*}
+where the constrains are ensuring that $q$ is a probability distribution matching these observed expectations.
+
+*** Justification
+As discussed in Section [[*Shannon / Information Entropy]], we know that the uniform distribution maximizes the entropy without any constraints. Principle of Maximum Entropy can therefore be considered as a 
+
+Now we will see an argument proposed by Graham Wallis to Jaynes, which has the benefit of being stricly combinatorial in nature, not making any references to information entropy.cite:jaynes2003probability
+
+Suppose one wants to assign probabilities to $m$ mutually exclusive propositions, and at the same time enforce constraints corresponding to testable information, e.g. expectation of $X$ is 0.3. One could then distribute $N$ quanta of probability at random to the $m$ prepositions, enforcing the constraints by starting over again if they are not satisfied. Upon reaching a distribution of these quanta which satisfies the constraints, then the probabilities are given by
+\begin{equation*}
+p_i = \frac{n_i}{N}, \quad i = 1, \dots, m
+\end{equation*}
+where $n_i$ are the number of quanta assigned to the i-th proposition. This has the same distribution as the case where one randomly places $N$ balls in $m$ different buckets, i.e. a multinomial distribution,
+\begin{equation*}
+P(\mathbf{p}) = \frac{W}{m^N}, \quad W = \frac{N!}{n_1! n_2! \dots n_m!}
+\end{equation*}
+where $\mathbf{p}$ is an $N$ dimensional vector with the j-th entry corresponding to which "bucket" the j-th "ball" was assigned.
+To obtain the most probable $\mathbf{p}$, one simply maximizes $W$, since $m^{-N}$ is of course independent of $\mathbf{p}$. Equivalently, one can maximize any monotonically increasing function of $W$, e.g.
+
+\begin{equation*}
+\begin{split}
+  \frac{1}{N} \log W &= \frac{1}{N} \log \frac{N!}{n_1! n_2! \dots n_m!} \\
+  &= \frac{1}{N} \log \frac{N!}{\big( N p_1 \big)! \big( N p_2 \big)! \cdots \big( N p_m \big)!} \\
+  &= \frac{1}{N} \bigg( \log N! - \sum_{i=1}^{m} \log \big( (N p_i)! \big) \bigg)
+\end{split}
+\end{equation*}
+Letting $N \to \infty$, and making use of Stirling's approximation, we get
+\begin{equation*}
+\begin{split}
+  \lim_{N \to \infty} \bigg( \frac{1}{N} \log W \bigg) 
+  &= \frac{1}{N} \Bigg( N \log N - \sum_{i=1}^{m} N p_i \log \big( N p_i \big) \Bigg) \\
+  &= \log N - \sum_{i=1}^{m} p_i \log (N p_i) \\
+  &= \log N - \log N \sum_{i=1}^{m} p_i - \sum_{i=1}^{m} p_i \log p_i \\
+  &= \Bigg( 1 - \sum_{i=1}^{m} p_i \Bigg) \log N - \sum_{i=1}^{m} p_i \log p_i \\
+  &= - \sum_{i=1}^{m} p_i \log p_i \\
+  &= H(\mathbf{p})
+\end{split}
+\end{equation*}
+Then, maximizing this wrt. the constraints of the testable information, we have arrived at the Principle of Maximum Entropy.
+
+** General expression for MaxEnt distribution
+Formulating the optimization problem in Equation ref:eqn:principle-of-max-ent using the method of Lagrange multipliers, we have
+\begin{equation*}
+\mathcal{L}[q] = - S_q + \sum_{i=1}^{m} \lambda_i \Bigg( \left\langle f_i \right\rangle_{\mathcal{X}} - \sum_{\mathbf{x}}^{} f_i(\mathbf{x}) q(\mathbf{x}) \Bigg) + \gamma \Bigg( 1 - \sum_{\mathbf{x}}^{} \dd{\mathbf{x}} q(\mathbf{x}) \Bigg)
+\end{equation*}
+We solve for $q$ by taking the functional derivative and letting it equal zero
+\begin{equation*}
+0 = \frac{\delta \mathcal{L}}{\delta q} = \big( \log q(\mathbf{x}) \big) + 1 - \gamma - \sum_{i=1}^{m} \lambda_i f_i(\mathbf{x})
+\end{equation*}
+We observe that this is satisfied by
+\begin{equation*}
+q(\mathbf{x}) = \frac{1}{Z} \exp \bigg( \sum_{i=1}^{m} \lambda_i f_i(\mathbf{x}) \bigg)
+\end{equation*}
+where
+\begin{equation*}
+Z(\lambda_1, \dots, \lambda_m) = \sum_{\mathbf{x}}^{} \exp \bigg( \sum_{i=1}^{m} \lambda_i f_i(\mathbf{x}) \bigg)
+\end{equation*}
+
+is the /partition function/. This expression for $q$ is therefore the /general form/ of the *maximum entropy distribution*. The Lagrange multipliers are then given by the convenient expressions
+\begin{equation*}
+\left\langle f_i \right\rangle_{\mathcal{X}} = \frac{\partial }{\partial \lambda_k} Z(\lambda_1, \dots, \lambda_m)
+\end{equation*}
+
+It is worth noting that due to the invariant measure $m(x)$ in Definition ref:def:continuous-entropy, the procedure for continuous random variables does not necessarily give the same maximum entropy model under the same constraints.
+
+* Applications
+** Prior probabilities
+In Bayesian inference the Principle of Maximum Entropy is often employed to come up with "uninformative" priors within the restricted hypothesis-space due to the constraints of the testable information. For example, the uniform prior repeatedly used when one has no constraints. Jaynes was a strong advocate of using maximum entropy distributions in these cases, while others oppose this usage.cite:jaynes1968prior,mackay2003information
+
+The use of the word /prior/ can be confusing, as later noted by Jaynes.cite:jaynes88 What is meant by using a maximum entropy model as a "prior", is to use the principle of maximum entropy to motivate /model design/.
+
+** Inference
+Again, the terminology can be confusing. Usually when people talk about using maximum entropy models for inference, one is actually meaning a model which maximizes the /cross-entropy/, sometimes called /conditional entropy/.
+
+#+name: def:conditional-entropy
+#+begin_definition :title ""
+Given discrete random variables $X$ and $Y$ taking on values $x \in \mathcal{X}$ and $y \in \mathcal{Y}$, the *conditional entropy* of $Y$ given $X$ is
+\begin{equation*}
+\begin{split}
+  H(Y \mid X) &= \sum_{x \in \mathcal{X}}^{} p(x) H(Y \mid X = x) \\
+  &= - \sum_{x \in \mathcal{X}}^{}  \sum_{y \in \mathcal{Y}}^{} p(x) p(y \mid x) \log p(y \mid x) \\
+\end{split}
+\end{equation*}
+#+end_definition
+
+This method is especially in the natural language processing community. Here maximum entropy models will often be used in large graphical models. cite:chieu_2002 Models in the exponential family, which the general maximum entropy model falls into, have some very nice properties for inference. The convexity of the exponential function makes optimization significantly easier, and computation can be simplified substantially by making use of $\log$ in many places rather than the exponentials. The optimization procedure is the same since $\log$ is monotonically increasing wrt. $\exp$. The usage of $\log$ also has the convenient effect of being more numerically stable, which is a huge benefit when performing numerical approximations.
+
+** Statistical Physics
+Entropy in physics was deduced using thermodynamic principles through the use of ensembles. This was later related to Shannon entropy, and the probability densities obtained for these ensembles were argued to be nothing more than maximum entropy models with different constraints depending on which type of ensemble one was working with, e.g. isotropic system.cite:jaynes_1957
+
+* My own thoughts (attempt at paper-like ends here)
+I honestly do not feel 100% convinced about maximum entropy models. The axioms of Shannon entropy are reasonable for a "measure of information", and that's all fine. Despite this I struggle with replacing the maximum likelihood when it comes to finding the best estimate of $p$ ($p$ being the /real/ or /underlying/ distribution of the data).
+- Constraints are imposed /based on empirical data/, so even if we have large amount of uncertainty about our observations, we're still requiring from our estimate of $p$ that it should follow these deterministic constraints.
+- I'm not sure what the requirements are for variational calculus to be "valid". Are there distributions which will not be possible solutions when using variation calculus to solve the optimization problem, but still satisfy the same constraints and maximize the same objective?
+- Not using the likelihood as the objective seems /wrong/. I can understand the usage of different objectives to simply the optimization problem, e.g. use of Kullback-Leibler divergence when fitting gradient-based models, but these are methods which attempt to find "measures of distance" between probability distributions / samples, hence there will always be some bias. The MaxEnt models often seems to be put on "equal footing" as likelihood-estimation.
+
+I think my conclusion in all of this is that MaxEnt models are not suited for /inference/, and in these cases the likelihood ought to be the target. MaxEnt ought to be used for cases where we want to restrict the hypothesis-space for /some/ reason (can't think of any right now), while trying to not make any other assumptions about the underlying distributions, /before/ trying to "fit" to any data. When you have data, maximum likelihood is the way to go. It also seems like this is similar to what Jaynes is saying 20 years after his first paper on the topic.cite:jaynes88
+
+* References
+bibliographystyle:unsrt
+bibliography:~/Projects/mine/summer-project-2018/references.bib
+
+* Footnotes
+
+[fn:2] A term often used when talking about probabilities in measure theory.
+
+[fn:1] Shannon information is often denoted $H$ in the informatics / mathematics literature due to its relatedness to the /entropy/ of thermodynamics.
