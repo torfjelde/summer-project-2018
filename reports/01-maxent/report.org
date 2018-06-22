@@ -2,6 +2,7 @@
 #+AUTHOR: Tor Erlend Fjelde
 #+Title: Maximum Entropy Models
 
+* TODO Introduction
 * Background
 ** Shannon / Information Entropy
 Let $X$ be a /discrete/ random variable, i.e. taking values from a at most countable sample space $\Omega_X$. The probability mass of $X$ is defined by $p_X: \mathscr{P}(\Omega_X) \to [0, 1]$ such that $\sum_{x \in \Omega_X} p_X(x) = 1$, where we use the notation $\mathscr{P}(\Omega_X)$ to mean the /powerset of $\Omega_X$/. The probability measure $P_X$ is then
@@ -31,7 +32,7 @@ S_p(A) = - \sum_{x \in A}^{} p(x) \log p(x), \quad \forall A \subseteq \Omega
 
 It is interesting to note that $S_p$ is /minimized/ when $p(x) = 1$ and $p(y) = 0$ for all $y \ne x$, as we would be certain of the outcome, and /maximized/ if $p(x) = p(y)$, i.e. $p$ is the uniform distribution, where all outcomes are equally likely. This coincides with what one would untuitively expect from a measure of information, where taking on the uniform distribution is the sensible thing to do when we have no prior information.
 
-*** Continuous random variables
+*** TODO Continuous random variables
 Shannon also introduced entropy of probability densities of /continuous/ random variables by simply substituting the summation in Definition ref:def:shannon-entropy by an integrand over all $x$. Unfortunately this continuous extension is not invariant under transformation, unlike $S_p$ in the discrete case. This also means that it allows /negative/ information, not satisfying the first axiom of information entropy.cite:jaynes1968prior
 
 #+name: def:continuous-entropy
@@ -44,24 +45,51 @@ H_p = - \int \dd{x} p(x) \log \frac{p(x)}{m(x)}
 where $m(x)$, called an /invariant measure/, is proportional to the limiting density of discrete points.cite:jaynes1968prior
 #+end_definition
 
+** Cross-entropy and Kullback-Leibner divergence
+Similar to information entropy as described in Definition ref:def:shannon-entropy, we have *cross-entropy* which is way of comparing two distributions $p$ and $q$. Suppose we have a message following the distribution $p$, then the optimal encoding of the message has the average length given by the information entropy, using $\log_2$. Then suppose we are instead using an encoding which is optimal for some /other/ distribution $q$. Then the average length of the encoded message from $p$ is given by
+\begin{equation*}
+- \sum_{x}^{} p(x) \log q(x)
+\end{equation*}
+which is the *cross-entropy* between $p$ and $q$, and has the property that it is always greater than or equal to $- \sum_{x}^{} p(x) \log p(x)$.
+
+Suppose we have $N$ samples $\{ x_i \}$ from $p$, then observe that the negative log-likelihood for some parametrizable distribution $q$ is given by
+\begin{equation*}
+- \frac{1}{N} \sum_{i=1}^{N} \log q(x_i \mid \theta)
+\end{equation*}
+By the Law of Large numbers, we have
+\begin{equation*}
+\lim_{N \to \infty} - \frac{1}{N} \sum_{i=1}^{N} \log q(x_i \mid \theta) = - \mathbb{E}_p[\log q(x \mid \theta)]
+\end{equation*}
+where $\mathbb{E}_p$ denotes the expectation over the probability density $p$. But this is exactly the cross-entropy given above. This implies that the $\theta$ which minimizes the cross-entropy is also the $\theta$ which maximizes the likelihood as the number of samples goes to infinity.
+
+This is often used in classification tasks as the objective one wants to maximize wrt. parameters $\theta$ of the model. 
+
+A similar measure which is also often used is the *Kullback-Leibler (KL) divergence* or *Relative entropy*, of which the cross-entropy is involved, defined
+\begin{equation*}
+D_{\rm{KL}}(p \ || \ q) = \mathbb{E}_p\Bigg[\log \frac{p(x \mid \theta^*)}{q(x \mid \theta)} \Bigg] = \mathbb{E}_p \big[ \log p(x \mid \theta^*) \big] - \mathbb{E}_p \big[ \log q(x \mid \theta) \big]
+\end{equation*}
+where $\theta^*$ is the optimal parameter and $\theta$ is the one we vary to approximate $p(x \mid \theta^*)$. The second term here is simply the cross-entropy above, and since $\theta^*$ is a constant, the minimization process would only depend on the second term, i.e. we have the same property of giving us the same estimate as the MLE for large $N$. Observe that in the case where $p(x \mid \theta^*) = q(x \mid \theta)$ for all $x$, the KL divergence clearly vanishes, which we would want from a similarity "measure".
+
+In fact, the KL divergence is also well-defined for continuous distributions, unlike the information entropy, as discussed earlier in Section [[*Continuous random variables]].
+
 * Maximum Entropy models
 ** Principle of Maximum Entropy
-Suppose we have a $N$ /samples/ $\mathcal{X} = \{ \mathbf{x}_i \in \mathbb{R}^d, \forall i = 1, \dots, N \}$ of a /discrete/ random vector $\mathbf{X}$, drawn from a probability density $p(\mathbf{x})$, and we want to estimate $p$ from $\mathcal{X}$. Let $q(\mathbf{x})$ denote our estimate of $p(\mathbf{x})$; that is, $q$ is our /model/.
+Suppose we have a $N$ /samples/ $A = \{ x_i \in \mathcal{X}, \forall i = 1, \dots, N \}$ of a /discrete/ random variables $X$, drawn from a probability density $p(x)$, and we want to estimate $p$ from $A$. Let $q(x)$ denote our estimate of $p(x)$; that is, $q$ is our /model/.
 
 In this case, the *Principle of Maximum Entropy* states that one should choose $q$ with the /largest uncertainty/; that is, choose $q$ such that
 \begin{equation*}
-\max_{q'} S_{q'} \big( \mathcal{X} \big) = S_q \big( \mathcal{X} \big)
+\max_{q'} S_{q'} \big( A \big) = S_q \big( A \big)
 \end{equation*}
-subject to constraints that the expectations of some /observed/ functions $\{ f_i: \mathbb{R}^d \to \mathbb{R} \}$ under our estimate $q$ are equal to their /observed/ expectations under the $p$.cite:mehta18_high_bias_low_varian_introd 
+subject to constraints that the expectations of some /observed/ functions $\{ f_i: \mathcal{X} \to \mathbb{R} \}$ under our estimate $q$ are equal to their /observed/ expectations under the $p$.cite:mehta18_high_bias_low_varian_introd 
 Formally,
 
 \begin{equation*}
 \label{eqn:principle-of-max-ent}
 \begin{aligned}
 & \underset{q}{\text{minimize}}
-& & - S_q(\mathcal{X}) \\
+& & - S_q(A) \\
 & \text{subject to}
-& & \sum_{\mathbf{x}}^{} q(\mathbf{x}) = 1, \quad \left\langle f_i \right\rangle_{\mathcal{X}} = \mathbb{E}_q[f_i], \; i = 1, \ldots, k.
+& & \sum_{x}^{} q(x) = 1, \quad \left\langle f_i \right\rangle_{A} = \mathbb{E}_q[f_i], \; i = 1, \ldots, k.
 \end{aligned}
 \end{equation*}
 where the constrains are ensuring that $q$ is a probability distribution matching these observed expectations.
@@ -106,60 +134,74 @@ Then, maximizing this wrt. the constraints of the testable information, we have 
 ** General expression for MaxEnt distribution
 Formulating the optimization problem in Equation ref:eqn:principle-of-max-ent using the method of Lagrange multipliers, we have
 \begin{equation*}
-\mathcal{L}[q] = - S_q + \sum_{i=1}^{m} \lambda_i \Bigg( \left\langle f_i \right\rangle_{\mathcal{X}} - \sum_{\mathbf{x}}^{} f_i(\mathbf{x}) q(\mathbf{x}) \Bigg) + \gamma \Bigg( 1 - \sum_{\mathbf{x}}^{} \dd{\mathbf{x}} q(\mathbf{x}) \Bigg)
+\mathcal{L}[q] = - S_q + \sum_{i=1}^{m} \lambda_i \Bigg( \left\langle f_i \right\rangle_{A} - \sum_{x}^{} f_i(x) q(x) \Bigg) + \gamma \Bigg( 1 - \sum_{x}^{} \dd{x} q(x) \Bigg)
 \end{equation*}
 We solve for $q$ by taking the functional derivative and letting it equal zero
 \begin{equation*}
-0 = \frac{\delta \mathcal{L}}{\delta q} = \big( \log q(\mathbf{x}) \big) + 1 - \gamma - \sum_{i=1}^{m} \lambda_i f_i(\mathbf{x})
+0 = \frac{\delta \mathcal{L}}{\delta q} = \big( \log q(x) \big) + 1 - \gamma - \sum_{i=1}^{m} \lambda_i f_i(x)
 \end{equation*}
 We observe that this is satisfied by
 \begin{equation*}
-q(\mathbf{x}) = \frac{1}{Z} \exp \bigg( \sum_{i=1}^{m} \lambda_i f_i(\mathbf{x}) \bigg)
+q(x) = \frac{1}{Z} \exp \bigg( \sum_{i=1}^{m} \lambda_i f_i(x) \bigg)
 \end{equation*}
 where
 \begin{equation*}
-Z(\lambda_1, \dots, \lambda_m) = \sum_{\mathbf{x}}^{} \exp \bigg( \sum_{i=1}^{m} \lambda_i f_i(\mathbf{x}) \bigg)
+Z(\lambda_1, \dots, \lambda_m) = \sum_{x}^{} \exp \bigg( \sum_{i=1}^{m} \lambda_i f_i(x) \bigg)
 \end{equation*}
 
 is the /partition function/. This expression for $q$ is therefore the /general form/ of the *maximum entropy distribution*. The Lagrange multipliers are then given by the convenient expressions
 \begin{equation*}
-\left\langle f_i \right\rangle_{\mathcal{X}} = \frac{\partial }{\partial \lambda_k} Z(\lambda_1, \dots, \lambda_m)
+\left\langle f_i \right\rangle_{A} = \frac{\partial }{\partial \lambda_k} Z(\lambda_1, \dots, \lambda_m)
 \end{equation*}
 
 It is worth noting that due to the invariant measure $m(x)$ in Definition ref:def:continuous-entropy, the procedure for continuous random variables does not necessarily give the same maximum entropy model under the same constraints.
 
-* Applications
-** Prior probabilities
-In Bayesian inference the Principle of Maximum Entropy is often employed to come up with "uninformative" priors within the restricted hypothesis-space due to the constraints of the testable information. For example, the uniform prior repeatedly used when one has no constraints. Jaynes was a strong advocate of using maximum entropy distributions in these cases, while others oppose this usage.cite:jaynes1968prior,mackay2003information
+** Principle of Maximum Entropy (POME) and Maximum Likelihood Estimate (MLE)
+As noted by Jaynes, it is important to note that there is clear distinction between POME and MLE.cite:jaynes88 POME is used for construction of models /a priori/, i.e. without any data. Using POME one specifies constraints on the /space of hypothesis/; one could say it is making a choice of which family of densities one wants to use for the model. Given the space of possible distributions which satisfy the stated constraints, POME provides a method of choosing which family to use, specifically it makes one choose the distribution which assumes the least amount information. What POME does /not/ do, is provide us with a method for finding the "optimal" (in some specified sense) parameters /within/ this family of distributions, i.e. if one of the constrains are $\mathbb{E}[f_i] = F_i$, we want the optimal $F_i$ wrt. the data. An example is in the case where we have a continuous random variable, where POME with the first and second moment constrained to some $\mu$ and $\sigma^2$, respectively. This gives us a Guassian distribution with mean $\mu$ and variance $\sigma^2$, but it does not specify which values $\mu$ and $\sigma^2$ should take.
 
-The use of the word /prior/ can be confusing, as later noted by Jaynes.cite:jaynes88 What is meant by using a maximum entropy model as a "prior", is to use the principle of maximum entropy to motivate /model design/.
-
-** Inference
-Again, the terminology can be confusing. Usually when people talk about using maximum entropy models for inference, one is actually meaning a model which maximizes the /cross-entropy/, sometimes called /conditional entropy/.
-
-#+name: def:conditional-entropy
-#+begin_definition :title ""
-Given discrete random variables $X$ and $Y$ taking on values $x \in \mathcal{X}$ and $y \in \mathcal{Y}$, the *conditional entropy* of $Y$ given $X$ is
+This is exactly where the Bayesian line of thinking comes in, proposing that one ought to choose the parameters of the distribution such that one maximizes the likelihood, or equivalently the log-likelihood, of the data. That is, given a set of data $\{ x_i \}$ which is believed to come from some parametrizable distribution $p_{\theta}$, then we want to find $\theta$ such that
 \begin{equation*}
-\begin{split}
-  H(Y \mid X) &= \sum_{x \in \mathcal{X}}^{} p(x) H(Y \mid X = x) \\
-  &= - \sum_{x \in \mathcal{X}}^{}  \sum_{y \in \mathcal{Y}}^{} p(x) p(y \mid x) \log p(y \mid x) \\
-\end{split}
+\max_{\theta} p(\left\{ x_i \right\} \mid \theta)
 \end{equation*}
-#+end_definition
+and since
+\begin{equation*}
+p(\left\{ x_i \right\} \mid \theta) = \frac{p(\theta \mid \left\{ x_i \right\}) p(\theta)}{p(\left\{ x_i \right\})}
+\end{equation*}
+we can equivalently work with the following objective function
+\begin{equation*}
+\max_{\theta} p\big( \theta \mid \left\{ x_i \right\} \big) p(\theta)
+\end{equation*}
+where the first factor is the /likelihood/ of the data. In Section we will see how there are objectives which are heavily related to the information entropy, which gives rise to MLE estimates in the limiting case of number of samples.
 
-This method is especially in the natural language processing community. Here maximum entropy models will often be used in large graphical models. cite:chieu_2002 Models in the exponential family, which the general maximum entropy model falls into, have some very nice properties for inference. The convexity of the exponential function makes optimization significantly easier, and computation can be simplified substantially by making use of $\log$ in many places rather than the exponentials. The optimization procedure is the same since $\log$ is monotonically increasing wrt. $\exp$. The usage of $\log$ also has the convenient effect of being more numerically stable, which is a huge benefit when performing numerical approximations.
+*** MaxEnt for finding priors
+In the case described above, one still needs to specify the /prior/ $p(\theta)$ for the parameters. Often one does not have any prior information and would like the prior $p(\theta)$ to be as "uninformative" as possible. Therefore it is often suggested that one ought to use POME to find suitable priors, since this would supposedly give us the least informative distribution under the constraints.cite:jaynes1968prior For example, if one is working on a non-degenerate interval on the real line and do not have any prior information of $\theta$, then the uniform distribution seems intuitvely to be the best choice, which is the same as POME would give us.
+
+MacKay suggests one should not even use POME for finding priors.cite:mackay2003information He brings up the following example: suppose one has an unfair die which we know has an average of $2.5$. What is the probabilities $\{ p_1, p_2, p_3, p_4, p_5, p_6 \}$? MacKay states that such questions are not even sensible. Still, one could argue that the resulting maximum entropy model is still better than nothing.
+
+** "Over-constraining"
+When using POME to construct MaxEnt models is important to be /reasonable/ in what constraints one enforce. Consider the case where we have observations $\{ x_i, i = 1, \dots, n \}$ of a discrete variables $X$. Let each of the constrained functions $f_i$ be defined as
+\begin{equation*}
+f_i(x) = 
+\begin{cases}
+  1 & \text{if } x = x_i \\
+  0 & \text{otherwise}
+\end{cases},
+\quad i = 1, \dots, n
+\end{equation*}
+Then our constraints are simply
+\begin{equation*}
+\mathbb{E}[f_i] = \sum_{x}^{} f_i(x) p(x) = p(x_i), \quad i = 1, \dots, n
+\end{equation*}
+That is, we have constrained the entire distribution. In this case it does not really make any sense to talk about "uninformativeness" of a distribution when we have literally constrained it to take on exactly the values we want. Therefore one should be careful when choosing constraints.
+
+* Applications
+** Natural Language Processing
+Maximum entropy models are used frequently in the natural language processing community, often in the context of large graphical models. cite:chieu_2002 Usually this simply means that they are using exponential models, which we know are MaxEnt models with certain constraints, and using some form of "relative" entropy as the objective function, as discussed in Section [[*Principle of Maximum Entropy (POME) and Maximum Likelihood Estimate (MLE)]].cite:berger1996maximum
+
+Models in the exponential family have some very nice properties for performing inference. The convexity of the exponential function makes optimization significantly easier, and computation can be simplified substantially by making use of $\log$ in many places rather than the exponentials. The optimization procedure is the same since $\log$ is monotonically increasing wrt. $\exp$. The usage of $\log$ also has the convenient effect of being more numerically stable, which is a huge benefit when performing numerical approximations.
 
 ** Statistical Physics
-Entropy in physics was deduced using thermodynamic principles through the use of ensembles. This was later related to Shannon entropy, and the probability densities obtained for these ensembles were argued to be nothing more than maximum entropy models with different constraints depending on which type of ensemble one was working with, e.g. isotropic system.cite:jaynes_1957
-
-* My own thoughts (attempt at paper-like ends here)
-I honestly do not feel 100% convinced about maximum entropy models. The axioms of Shannon entropy are reasonable for a "measure of information", and that's all fine. Despite this I struggle with replacing the maximum likelihood when it comes to finding the best estimate of $p$ ($p$ being the /real/ or /underlying/ distribution of the data).
-- Constraints are imposed /based on empirical data/, so even if we have large amount of uncertainty about our observations, we're still requiring from our estimate of $p$ that it should follow these deterministic constraints.
-- I'm not sure what the requirements are for variational calculus to be "valid". Are there distributions which will not be possible solutions when using variation calculus to solve the optimization problem, but still satisfy the same constraints and maximize the same objective?
-- Not using the likelihood as the objective seems /wrong/. I can understand the usage of different objectives to simply the optimization problem, e.g. use of Kullback-Leibler divergence when fitting gradient-based models, but these are methods which attempt to find "measures of distance" between probability distributions / samples, hence there will always be some bias. The MaxEnt models often seems to be put on "equal footing" as likelihood-estimation.
-
-I think my conclusion in all of this is that MaxEnt models are not suited for /inference/, and in these cases the likelihood ought to be the target. MaxEnt ought to be used for cases where we want to restrict the hypothesis-space for /some/ reason (can't think of any right now), while trying to not make any other assumptions about the underlying distributions, /before/ trying to "fit" to any data. When you have data, maximum likelihood is the way to go. It also seems like this is similar to what Jaynes is saying 20 years after his first paper on the topic.cite:jaynes88
+Entropy in physics was deduced using thermodynamic principles through the use of ensembles, which is very similar to the alternative justification we saw in Section [[*Justification]]. This was later related to Shannon entropy, and the probability densities obtained for these ensembles were argued to be nothing more than maximum entropy models with different constraints depending on which type of ensemble one was working with, e.g. isotropic system.cite:jaynes_1957
 
 * References
 bibliographystyle:unsrt
