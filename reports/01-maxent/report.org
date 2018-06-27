@@ -63,7 +63,7 @@ By the Law of Large numbers, we have
 where $\mathbb{E}_p$ denotes the expectation over the probability density $p$. But this is exactly the cross-entropy given above. This implies that the $\theta$ which minimizes the cross-entropy is also the $\theta$ which maximizes the likelihood as the number of samples goes to infinity.
 
 This is often used in classification tasks as the objective one wants to maximize wrt. parameters $\theta$ of the model. 
-
+*** Kullback-Leibler divergence
 A similar measure which is also often used is the *Kullback-Leibler (KL) divergence* or *Relative entropy*, of which the cross-entropy is involved, defined
 \begin{equation*}
 D_{\rm{KL}}(p \ || \ q) = \mathbb{E}_p\Bigg[\log \frac{p(x \mid \theta^*)}{q(x \mid \theta)} \Bigg] = \mathbb{E}_p \big[ \log p(x \mid \theta^*) \big] - \mathbb{E}_p \big[ \log q(x \mid \theta) \big]
@@ -89,10 +89,10 @@ Formally,
 & \underset{q}{\text{minimize}}
 & & - S_q(A) \\
 & \text{subject to}
-& & \sum_{x}^{} q(x) = 1, \quad \left\langle f_i \right\rangle_{A} = \mathbb{E}_q[f_i], \; i = 1, \ldots, k.
+& & \sum_{x}^{} q(x) = 1, \quad \mathbb{E}_q[f_i] = F_i, \; i = 1, \ldots, k.
 \end{aligned}
 \end{equation*}
-where the constrains are ensuring that $q$ is a probability distribution matching these observed expectations.
+for some $F_i$, where the constrains are ensuring that $q$ is a probability distribution matching these observed expectations.
 
 *** Justification
 As discussed in Section [[*Shannon / Information Entropy]], we know that the uniform distribution maximizes the entropy without any constraints. Principle of Maximum Entropy can therefore be considered as a 
@@ -132,7 +132,7 @@ Letting $N \to \infty$, and making use of Stirling's approximation, we get
 Then, maximizing this wrt. the constraints of the testable information, we have arrived at the Principle of Maximum Entropy.
 
 ** General expression for MaxEnt distribution
-Formulating the optimization problem in Equation ref:eqn:principle-of-max-ent using the method of Lagrange multipliers, we have
+Formulating the optimization problem in Equation ref:eqn:principle-of-max-ent using the method of Lagrange multipliers, letting $F_i = \left\langle f_i \right\rangle_A$, i.e. the expectations over $q$ constrained to be equal to the /empirical/ expectation, we have
 \begin{equation*}
 \mathcal{L}[q] = - S_q + \sum_{i=1}^{m} \lambda_i \Bigg( \left\langle f_i \right\rangle_{A} - \sum_{x}^{} f_i(x) q(x) \Bigg) + \gamma \Bigg( 1 - \sum_{x}^{} \dd{x} q(x) \Bigg)
 \end{equation*}
@@ -203,7 +203,7 @@ Models in the exponential family have some very nice properties for performing i
 ** Statistical Physics
 Entropy in physics was deduced using thermodynamic principles through the use of ensembles, which is very similar to the alternative justification we saw in Section [[*Justification]]. This was later related to Shannon entropy, and the probability densities obtained for these ensembles were argued to be nothing more than maximum entropy models with different constraints depending on which type of ensemble one was working with, e.g. isotropic system.cite:jaynes_1957
 
-* References
+
 bibliographystyle:unsrt
 bibliography:~/Projects/mine/summer-project-2018/references.bib
 
