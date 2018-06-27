@@ -210,6 +210,7 @@ if __name__ == "__main__":
 
     X_train, X_test, y_train, y_test = train_test_split(X, y)
     X_train = X_train / np.linalg.norm(X_train, axis=1).reshape(-1, 1)
+    X_test = X_test / np.linalg.norm(X_test, axis=1).reshape(-1, 1)
 
     # model
     rbm = BernoulliRBM(X_train.shape[1], NUM_HIDDEN)
@@ -238,6 +239,7 @@ if __name__ == "__main__":
     
     num_samples = 1000
 
+    fig, axes = plt.subplots(5, 2, figsize=(14, 4))
     for i in range(5):
         x = X_test[np.random.randint(X_test.shape[0])]
         probs = rbm.sample_visible(rbm.sample_hidden(x))
@@ -247,7 +249,6 @@ if __name__ == "__main__":
 
         probs = probs / num_samples
 
-        fig, axes = plt.subplots(5, 2, figsize=(14, 4))
         axes[i][0].imshow(np.reshape(probs, (28, 28)))
         axes[i][1].imshow(np.reshape(x, (28, 28)))
     plt.savefig("sample.png")
