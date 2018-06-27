@@ -40,7 +40,7 @@ class BernoulliRBM(object):
         b = np.zeros(num_hidden)
 
         # weight matrix
-        W = np.random.normal(0.0, 0.01, (num_visible, num_hidden))
+        W = np.random.normal(0.0, 1.0, (num_visible, num_hidden))
         
         return c, b, W
 
