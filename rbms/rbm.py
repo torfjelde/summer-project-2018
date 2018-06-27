@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import numpy as np
 
 from tqdm import tqdm
@@ -231,6 +232,8 @@ if __name__ == "__main__":
 
     # display a couple of testing examples
     import matplotlib.pyplot as plt
+    # don't use `Xwindows` to render since this doesn't necessarily work over SSH
+    matplotlib.use('Agg')
     
     num_samples = 1000
 
