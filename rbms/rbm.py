@@ -231,9 +231,10 @@ if __name__ == "__main__":
         np.random.shuffle(indices)
 
     # display a couple of testing examples
-    import matplotlib.pyplot as plt
+    import matplotlib
     # don't use `Xwindows` to render since this doesn't necessarily work over SSH
     matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
     
     num_samples = 1000
 
