@@ -1,17 +1,39 @@
 #!/usr/bin/env python
-import numpy as np
+import argparse
 
+# progess-bar
 from tqdm import tqdm
 
 import logging
 
-LOG_LEVEL = "INFO"
+### Parsing ###
+parser = argparse.ArgumentParser(description="Trains an RBM on the MNIST dataset.")
+parser.add_argument("-k", type=int, default=1, help="Number of steps to use in Contrastive Divergence (CD-k)")
+parser.add_argument("--batch-size", type=int, default=64)
+parser.add_argument("--hidden-size", type=int, default=500, help="Number of hidden units")
+parser.add_argument("--epochs", type=int, default=10, help="Number of epochs; one epoch runs through entire training data")
+parser.add_argument("--lr", type=float, default=0.01, help="Learning rate used multiplied by the gradients")
+parser.add_argument("--gpu", action="store_true", help="Whether or not to use the GPU. Requires CUDA and cupy installed.")
+parser.add_argument("--output", type=str, default="sample.png", help="Output file for reconstructed images from test data")
+parser.add_argument("--show", type=bool, default=False, help="Whether or not to display image; useful when running on remote computer")
+parser.add_argument("-L", "--loglevel", type=str, default="INFO")
+
+FLAGS = parser.parse_args()
+
+### Numpy or Cupy?
+if FLAGS.gpu:
+    import cupy as np
+else:
+    import numpy as np
+
+### Logging ###
+LOG_LEVEL = FLAGS.loglevel
 LOG_FORMAT = '%(asctime)-15s %(levelname)-9s %(module)s: %(message)s'
 logging.basicConfig(format=LOG_FORMAT, level=getattr(logging, LOG_LEVEL))
-
 log = logging.getLogger("rbm")
 
 
+### Utilities
 def loss(samples_true, samples):
     "Computes the difference in empirical distributions."
     return np.mean(np.abs(np.mean(samples_true, axis=0) - np.mean(samples, axis=0)))
@@ -22,6 +44,7 @@ def sigmoid(z):
     return 1.0 / (1.0 + np.exp(-np.maximum(np.minimum(z, 30), -30)))
 
 
+### Restricted Boltzmann Machine ###
 class BernoulliRBM(object):
     """
     RBM with Bernoulli variables for hidden and visible states.
@@ -40,6 +63,7 @@ class BernoulliRBM(object):
         b = np.zeros(num_hidden)
 
         # weight matrix
+        # Results on MNIST are highly dependent on this initialization
         W = np.random.normal(0.0, 1.0, (num_visible, num_hidden))
         
         return c, b, W
@@ -72,6 +96,14 @@ class BernoulliRBM(object):
         rands = np.random.random(size=probas.shape)
         h = (probas > rands).astype(np.int)
         return h
+
+    def free_energy(self, v):
+        # unnormalized
+        # F(v) = - log \tilde{p}(v) = - \log \sum_{h} \exp ( - E(v, h))
+        # using Eq. 2.20 (Fischer, 2015) for \tilde{p}(v)
+        visible = np.dot(self.c, v)
+        hidden = self.b + np.dot(self.W, v)
+        return - (visible + np.sum(np.log(1 + np.exp(hidden))))
     
     def contrastive_divergence(self, v_0, k=1):
         h = self.sample_hidden(v_0)
@@ -84,9 +116,8 @@ class BernoulliRBM(object):
                 
         return v_0, v
 
-    def grad(self, v, k=1):
+    def grad(self, v_0, v_k, k=1):
         "Estimates the gradient of the negative log-likelihood using CD-k."
-        v_0, v_k = self.contrastive_divergence(v, k=k)
         proba_h_0 = self.proba_hidden(v_0)
         proba_h_k = self.proba_hidden(v_k)
         
@@ -105,22 +136,31 @@ class BernoulliRBM(object):
         
         return delta_c, delta_b, delta_W
     
-    def step(self, vs, k=1, lr=0.1):
-        "Performs a single gradient descent step using CD-k on the batch `vs`."
+    def step(self, vs, k=1, lr=0.1, lmda=0.0):
+        "Performs a single gradient ascent step using CD-k on the batch `vs`."
         # TODO: can we perform this over the batch using matrix multiplication instead?
-        delta_c, delta_b, delta_W = self.grad(vs[0], k=k)
+        v_0, v_k = self.contrastive_divergence(vs[0], k=k)
+        delta_c, delta_b, delta_W = self.grad(v_0, v_k, k=k)
         for v in vs[1:]:
+            # perform CD-k
+            v_0, v_k = self.contrastive_divergence(v, k=k)
             # compute gradient for each observed visible configuration
-            dc, db, dW = self.grad(v, k=k)
+            dc, db, dW = self.grad(v_0, v_k, k=k)
             # accumulate gradients
             delta_c += dc
             delta_b += db
             delta_W += dW
 
         # update parameters
-        rbm.c += lr * (delta_c / len(vs))
-        rbm.b += lr * (delta_b / len(vs))
-        rbm.W += lr * (delta_W / len(vs))
+        self.c += lr * (delta_c / len(vs))
+        self.b += lr * (delta_b / len(vs))
+        self.W += lr * (delta_W / len(vs))
+
+        # possible apply weight-decay
+        if lmda > 0.0:
+            self.c -= lmda * self.c
+            self.b -= lmda * self.b
+            self.W -= lmda * self.W
         
     def loss(self, samples_true, per_sample_hidden=100):
         """
@@ -145,34 +185,48 @@ class BernoulliRBM(object):
         marginalizing out all hidden variables.
 
         """
-        samples = []
-        v = samples_true[0]
+        k = per_sample_hidden
+        # the loss is the log energy-difference between the p(v) and p(v_k), where `v_k` is the Gibbs sampled visible unit
+        return np.mean([
+            self.free_energy(v) - self.free_energy(self.contrastive_divergence(v, k))
+            for v in samples_true
+        ])
+        # samples = []
+        # v = samples_true[0]
 
-        for i in range(len(samples_true)):
-        #     v = history[i]
-            h = self.sample_hidden(v)
-            p = self.proba_visible(h)
+        # for i in range(len(samples_true)):
+        # #     v = history[i]
+        #     h = self.sample_hidden(v)
+        #     p = self.proba_visible(h)
             
-            for j in range(per_sample_hidden):
-                p += self.proba_visible(self.sample_hidden(v))
+        #     for j in range(per_sample_hidden):
+        #         p += self.proba_visible(self.sample_hidden(v))
                 
-            p /= per_sample_hidden
-            samples.append(v)
+        #     p /= per_sample_hidden
+        #     samples.append(v)
             
-        return loss(samples_true, samples)
+        # return loss(samples_true, samples)
+
+    def reconstruct(self, v, num_samples=100):
+        samples = self.sample_visible(self.sample_hidden(v))
+        for _ in range(num_samples - 1):
+            samples += self.sample_visible(self.sample_hidden(v))
+
+        probs = samples / num_samples 
+
+        return probs
 
 
 if __name__ == "__main__":
-    NUM_EPOCHS = 1
-    BATCH_SIZE = 128
-    NUM_HIDDEN = 250
-    LEARNING_RATE = 0.01
-    K = 1
+    NUM_EPOCHS = FLAGS.epochs
+    BATCH_SIZE = FLAGS.batch_size
+    NUM_HIDDEN = FLAGS.hidden_size
+    LEARNING_RATE = FLAGS.lr
+    K = FLAGS.k
 
     import os
     from six.moves import urllib
     from sklearn.datasets import fetch_mldata
-
 
     # Alternative method to load MNIST, since mldata.org is often down...
     from scipy.io import loadmat
@@ -180,7 +234,7 @@ if __name__ == "__main__":
     mnist_path = "./mnist-original.mat"
 
     if os.path.exists(mnist_path):
-        log.info(f"Found existing file at {mnist_path}")
+        log.info(f"Found existing file at {mnist_path}; loading...")
         mnist_raw = loadmat(mnist_path)
         mnist = {
             "data": mnist_raw["data"].T,
@@ -189,6 +243,7 @@ if __name__ == "__main__":
             "DESCR": "mldata.org dataset: mnist-original",
         }
     else:
+        log.info(f"Dataset not found at {mnist_path}; downloading...")
         response = urllib.request.urlopen(mnist_alternative_url)
         with open(mnist_path, "wb") as f:
             content = response.read()
@@ -205,23 +260,31 @@ if __name__ == "__main__":
     # train-test split
     from sklearn.model_selection import train_test_split
 
-    X = mnist["data"]
-    y = mnist["target"]
+    # in case we want to use `cupy` to run on the GPU
+    X = np.asarray(mnist["data"])
+    y = np.asarray(mnist["target"])
 
     X_train, X_test, y_train, y_test = train_test_split(X, y)
-    X_train = X_train / np.linalg.norm(X_train, axis=1).reshape(-1, 1)
-    X_test = X_test / np.linalg.norm(X_test, axis=1).reshape(-1, 1)
+    # clip values since we're working with binary variables and original images have domain [0, 255]
+    X_train = X_train.clip(0, 1)
+    X_test = X_test.clip(0, 1)
 
     # model
     rbm = BernoulliRBM(X_train.shape[1], NUM_HIDDEN)
 
     # train
-    log.info(f"Training")
+    log.info(f"Starting training")
     num_samples = X_train.shape[0]
     indices = np.arange(num_samples)
     np.random.shuffle(indices)
+    
     for epoch in range(1, NUM_EPOCHS + 1):
+        # if epoch == NUM_EPOCHS:
+        #     log.info(f"[{epoch} / {NUM_EPOCHS}] Increasing k: {K} -> {5 * K}")
+        #     K = 5 * K
+        # else:
         log.info(f"[{epoch} / {NUM_EPOCHS}]")
+
         bar = tqdm(total=num_samples)
         for start in range(0, num_samples, BATCH_SIZE):
             end = min(start + BATCH_SIZE, num_samples)
@@ -237,20 +300,28 @@ if __name__ == "__main__":
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     
-    num_samples = 1000
+    # plot some reconstructions
+    n_rows = 6
+    n_cols = 8
 
-    fig, axes = plt.subplots(5, 2, figsize=(14, 4))
-    for i in range(5):
-        x = X_test[np.random.randint(X_test.shape[0])]
-        probs = rbm.sample_visible(rbm.sample_hidden(x))
+    fig, axes = plt.subplots(n_rows, n_cols, sharex=True, sharey=True, figsize=(16, 12))
 
-        for _ in range(num_samples):
-            probs += rbm.sample_visible(rbm.sample_hidden(x))
+    for i in range(n_rows):
+        for j in range(n_cols // 2):
+            v = X_test[np.random.randint(X_test.shape[0])]
+            probs = rbm.reconstruct(v)
 
-        probs = probs / num_samples
+            # in case we've substituted with `cupy`
+            if np.__name__ != "numpy":
+                v = np.asnumpy(v)
+                probs = np.asnumpy(probs)
 
-        axes[i][0].imshow(np.reshape(probs, (28, 28)))
-        axes[i][1].imshow(np.reshape(x, (28, 28)))
-    plt.savefig("sample.png")
-    # plt.show()
+            axes[i][2 * j].imshow(np.reshape(v, (28, 28)))
+            axes[i][2 * j + 1].imshow(np.reshape(probs, (28, 28)))
+
+    log.info(f"Saving to {FLAGS.output}")
+    plt.savefig(FLAGS.output)
+
+    if FLAGS.show:
+        plt.show()
 
