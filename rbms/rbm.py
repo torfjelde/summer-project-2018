@@ -299,17 +299,21 @@ if __name__ == "__main__":
     # don't use `Xwindows` to render since this doesn't necessarily work over SSH
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
-    
+
     # plot some reconstructions
+    from matplotlib import gridspec
+
     n_rows = 6
     n_cols = 8
 
-    fig, axes = plt.subplots(n_rows, n_cols, sharex=True, sharey=True, figsize=(16, 12))
+    fig, axes = plt.subplots(n_rows, n_cols, sharex=True, sharey=True, 
+                             figsize=(16, 12), 
+                             gridspec_kw=dict(wspace=-0.1, hspace=-0.01))
 
     for i in range(n_rows):
         for j in range(n_cols // 2):
-            v = X_test[np.random.randint(X_test.shape[0])]
-            probs = rbm.reconstruct(v)
+            v = sample_data[np.random.randint(sample_data.shape[0])]
+            probs = reconstruct(v)
 
             # in case we've substituted with `cupy`
             if np.__name__ != "numpy":
@@ -319,6 +323,14 @@ if __name__ == "__main__":
             axes[i][2 * j].imshow(np.reshape(v, (28, 28)))
             axes[i][2 * j + 1].imshow(np.reshape(probs, (28, 28)))
 
+            # customization; remove labels
+            axes[i][2 * j].set_xticklabels([])
+            axes[i][2 * j].set_yticklabels([])
+
+            axes[i][2 * j + 1].set_xticklabels([])
+            axes[i][2 * j + 1].set_yticklabels([])
+
+    fig.savefig("test.png")
     log.info(f"Saving to {FLAGS.output}")
     plt.savefig(FLAGS.output)
 
