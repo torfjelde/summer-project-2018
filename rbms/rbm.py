@@ -102,7 +102,7 @@ class BernoulliRBM(object):
         # F(v) = - log \tilde{p}(v) = - \log \sum_{h} \exp ( - E(v, h))
         # using Eq. 2.20 (Fischer, 2015) for \tilde{p}(v)
         visible = np.dot(self.c, v)
-        hidden = self.b + np.dot(self.W, v)
+        hidden = self.b + np.dot(self.W.T, v)
         return - (visible + np.sum(np.log(1 + np.exp(hidden))))
     
     def contrastive_divergence(self, v_0, k=1):
@@ -116,7 +116,7 @@ class BernoulliRBM(object):
                 
         return v_0, v
 
-    def grad(self, v_0, v_k, k=1):
+    def grad(self, v_0, v_k):
         "Estimates the gradient of the negative log-likelihood using CD-k."
         proba_h_0 = self.proba_hidden(v_0)
         proba_h_k = self.proba_hidden(v_k)
@@ -140,12 +140,12 @@ class BernoulliRBM(object):
         "Performs a single gradient ascent step using CD-k on the batch `vs`."
         # TODO: can we perform this over the batch using matrix multiplication instead?
         v_0, v_k = self.contrastive_divergence(vs[0], k=k)
-        delta_c, delta_b, delta_W = self.grad(v_0, v_k, k=k)
+        delta_c, delta_b, delta_W = self.grad(v_0, v_k)
         for v in vs[1:]:
             # perform CD-k
             v_0, v_k = self.contrastive_divergence(v, k=k)
             # compute gradient for each observed visible configuration
-            dc, db, dW = self.grad(v_0, v_k, k=k)
+            dc, db, dW = self.grad(v_0, v_k)
             # accumulate gradients
             delta_c += dc
             delta_b += db
@@ -188,7 +188,7 @@ class BernoulliRBM(object):
         k = per_sample_hidden
         # the loss is the log energy-difference between the p(v) and p(v_k), where `v_k` is the Gibbs sampled visible unit
         return np.mean([
-            self.free_energy(v) - self.free_energy(self.contrastive_divergence(v, k))
+            self.free_energy(v) - self.free_energy(self.contrastive_divergence(v, k)[1])
             for v in samples_true
         ])
         # samples = []
