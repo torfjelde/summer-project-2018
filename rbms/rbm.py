@@ -228,12 +228,12 @@ class BernoulliRBM(object):
 
         for epoch in range(1, num_epochs + 1):
             # compute train & test negative log-likelihood
-            nll_train = np.mean([rbm.free_energy(v) for v in train_data])
+            nll_train = np.mean(np.array([rbm.free_energy(v) for v in train_data]))
             loglikelihood_train.append(nll_train)
             log.info(f"[{epoch} / {NUM_EPOCHS}] NLL (train): {nll_train:>20.5f}")
 
             if test_data is not None:
-                nll = np.mean([rbm.free_energy(v) for v in test_data])
+                nll = np.mean(np.array([rbm.free_energy(v) for v in test_data]))
                 log.info(f"[{epoch} / {NUM_EPOCHS}] NLL (test):  {nll:>20.5f}")
                 loglikelihood.append(nll)
 
