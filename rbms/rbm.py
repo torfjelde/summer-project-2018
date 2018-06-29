@@ -34,11 +34,6 @@ log = logging.getLogger("rbm")
 
 
 ### Utilities
-def loss(samples_true, samples):
-    "Computes the difference in empirical distributions."
-    return np.mean(np.abs(np.mean(samples_true, axis=0) - np.mean(samples, axis=0)))
-
-
 def sigmoid(z):
     # clip the values due to possibility of overflow
     return 1.0 / (1.0 + np.exp(-np.maximum(np.minimum(z, 30), -30)))
@@ -191,21 +186,6 @@ class BernoulliRBM(object):
             self.free_energy(v) - self.free_energy(self.contrastive_divergence(v, k)[1])
             for v in samples_true
         ])
-        # samples = []
-        # v = samples_true[0]
-
-        # for i in range(len(samples_true)):
-        # #     v = history[i]
-        #     h = self.sample_hidden(v)
-        #     p = self.proba_visible(h)
-            
-        #     for j in range(per_sample_hidden):
-        #         p += self.proba_visible(self.sample_hidden(v))
-                
-        #     p /= per_sample_hidden
-        #     samples.append(v)
-            
-        # return loss(samples_true, samples)
 
     def reconstruct(self, v, num_samples=100):
         samples = self.sample_visible(self.sample_hidden(v))
