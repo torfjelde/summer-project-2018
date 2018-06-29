@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 import argparse
 
@@ -8,15 +9,25 @@ import logging
 
 ### Parsing ###
 parser = argparse.ArgumentParser(description="Trains an RBM on the MNIST dataset.")
-parser.add_argument("-k", type=int, default=1, help="Number of steps to use in Contrastive Divergence (CD-k)")
+parser.add_argument("-k", type=int, default=1,
+                    help="Number of steps to use in Contrastive Divergence (CD-k)")
 parser.add_argument("--batch-size", type=int, default=64)
-parser.add_argument("--hidden-size", type=int, default=500, help="Number of hidden units")
-parser.add_argument("--epochs", type=int, default=10, help="Number of epochs; one epoch runs through entire training data")
-parser.add_argument("--lr", type=float, default=0.01, help="Learning rate used multiplied by the gradients")
-parser.add_argument("--gpu", action="store_true", help="Whether or not to use the GPU. Requires CUDA and cupy installed.")
-parser.add_argument("--output", type=str, default="sample.png", help="Output file for reconstructed images from test data")
-parser.add_argument("--show", type=bool, default=False, help="Whether or not to display image; useful when running on remote computer")
-parser.add_argument("-L", "--loglevel", type=str, default="INFO")
+parser.add_argument("--hidden-size", type=int, default=500,
+                    help="Number of hidden units")
+parser.add_argument("--epochs", type=int, default=10,
+                    help="Number of epochs; one epoch runs through entire training data")
+parser.add_argument("--lr", type=float, default=0.01,
+                    help="Learning rate used multiplied by the gradients")
+parser.add_argument("--gpu", action="store_true",
+                    help="Whether or not to use the GPU. Requires CUDA and cupy installed.")
+parser.add_argument("--output", type=str, default="sample.png",
+                    help="Output file for reconstructed images from test data")
+parser.add_argument("--show", type=bool, default=False,
+                    help="Whether or not to display image; useful when running on remote computer")
+parser.add_argument("--noise", type=float, default=0.1,
+                    help="Noise to use when attempting reconstructions.")
+parser.add_argument("-L", "--loglevel", type=str, default="INFO",
+                    help="Set the logging level, e.g. INFO, DEBUG, WARNING.")
 
 FLAGS = parser.parse_args()
 
@@ -37,6 +48,58 @@ log = logging.getLogger("rbm")
 def sigmoid(z):
     # clip the values due to possibility of overflow
     return 1.0 / (1.0 + np.exp(-np.maximum(np.minimum(z, 30), -30)))
+
+
+def flip(x, p):
+    "Assumes `x` is an array of 0s and 1s, and flips these based on probabilities `p`."
+    x = x.copy()
+    mask = np.random.random(size=x.shape) < p
+    flipped = (~(x.astype(np.bool))).astype(np.int)
+    x[mask] = flipped[mask]
+    return x
+
+
+def plot_reconstructions(rbm, data, noise=0.0):
+    # plot some reconstructions
+    from matplotlib import gridspec
+
+    n_rows = 6
+    n_cols = 8
+
+    fig, axes = plt.subplots(n_rows, n_cols, 
+                             sharex=True, sharey=True, 
+                             figsize=(16, 12),
+                             # make it tight
+                             gridspec_kw=dict(wspace=-0.1, hspace=-0.01))
+
+    for i in range(n_rows):
+        for j in range(n_cols // 2):
+            v_0 = data[np.random.randint(data.shape[0])]
+
+            # introduce noise
+            v = flip(v_0, noise)
+
+            probs = rbm.reconstruct(v, num_samples=1000)
+
+            # in case we've substituted with `cupy`
+            if np.__name__ != "numpy":
+                v = np.asnumpy(v)
+                probs = np.asnumpy(probs)
+
+            log.info(f"Reconstruction error of {(i, 2 * j)}: " +
+                     f"{np.mean(np.abs(v_0 - probs))} (noise: {noise})")
+
+            axes[i][2 * j].imshow(np.reshape(v, (28, 28)))
+            axes[i][2 * j + 1].imshow(np.reshape(probs, (28, 28)))
+
+            # customization; remove labels
+            axes[i][2 * j].set_xticklabels([])
+            axes[i][2 * j].set_yticklabels([])
+
+            axes[i][2 * j + 1].set_xticklabels([])
+            axes[i][2 * j + 1].set_yticklabels([])
+
+    return fig, axes
 
 
 ### Restricted Boltzmann Machine ###
@@ -156,6 +219,54 @@ class BernoulliRBM(object):
             self.c -= lmda * self.c
             self.b -= lmda * self.b
             self.W -= lmda * self.W
+
+    def fit(self, train_data, k=1, learning_rate=0.01, num_epochs=5, batch_size=64, test_data=None):
+        num_samples = train_data.shape[0]
+        indices = np.arange(num_samples)
+        np.random.shuffle(indices)
+
+        loglikelihood_train = []
+        loglikelihood = []
+
+        for epoch in range(1, num_epochs + 1):
+            # compute train & test negative log-likelihood
+            nll_train = np.mean([rbm.free_energy(v) for v in train_data])
+            loglikelihood_train.append(nll_train)
+            log.info(f"[{epoch} / {NUM_EPOCHS}] NLL (train): {nll_train:>20.5f}")
+
+            if test_data is not None:
+                nll = np.mean([rbm.free_energy(v) for v in test_data])
+                log.info(f"[{epoch} / {NUM_EPOCHS}] NLL (test):  {nll:>20.5f}")
+                loglikelihood.append(nll)
+
+            # iterate through dataset in batches
+            bar = tqdm(total=num_samples)
+            for start in range(0, num_samples, batch_size):
+                # ensure we don't go out-of-bounds
+                end = min(start + batch_size, num_samples)
+
+                # take a gradient-step
+                rbm.step(train_data[start: end], k=k, lr=learning_rate)
+
+                # update progress
+                bar.update(end - start)
+
+            bar.close()
+
+            # shuffle indices for next epoch
+            np.random.shuffle(indices)
+
+        # compute train & test negative log-likelihood of final batch
+        nll_train = np.mean([rbm.free_energy(v) for v in train_data])
+        loglikelihood_train.append(nll_train)
+        log.info(f"[{epoch} / {NUM_EPOCHS}] NLL (train): {nll_train:>20.5f}")
+
+        if test_data is not None:
+            nll = np.mean([rbm.free_energy(v) for v in test_data])
+            log.info(f"[{epoch} / {NUM_EPOCHS}] NLL (test):  {nll:>20.5f}")
+            loglikelihood.append(nll)
+
+        return loglikelihood_train, loglikelihood
         
     def loss(self, samples_true, per_sample_hidden=100):
         """
@@ -254,63 +365,21 @@ if __name__ == "__main__":
 
     # train
     log.info(f"Starting training")
-    num_samples = X_train.shape[0]
-    indices = np.arange(num_samples)
-    np.random.shuffle(indices)
-    
-    for epoch in range(1, NUM_EPOCHS + 1):
-        # if epoch == NUM_EPOCHS:
-        #     log.info(f"[{epoch} / {NUM_EPOCHS}] Increasing k: {K} -> {5 * K}")
-        #     K = 5 * K
-        # else:
-        log.info(f"[{epoch} / {NUM_EPOCHS}]")
-
-        bar = tqdm(total=num_samples)
-        for start in range(0, num_samples, BATCH_SIZE):
-            end = min(start + BATCH_SIZE, num_samples)
-            rbm.step(X_train[start: end], k=K, lr=LEARNING_RATE)
-            bar.update(end - start)
-
-        # shuffle indices for next epoch
-        np.random.shuffle(indices)
+    loglikelihood_train, loglikelihood = rbm.fit(
+        X_train, test_data=X_test,
+        k=K, learning_rate=LEARNING_RATE,
+        num_epochs=NUM_EPOCHS, batch_size=BATCH_SIZE
+    )
 
     # display a couple of testing examples
     import matplotlib
     # don't use `Xwindows` to render since this doesn't necessarily work over SSH
     matplotlib.use('Agg')
+    # display a couple of testing examples
     import matplotlib.pyplot as plt
 
-    # plot some reconstructions
-    from matplotlib import gridspec
+    plot_reconstructions(rbm, X_test, noise=FLAGS.noise)
 
-    n_rows = 6
-    n_cols = 8
-
-    fig, axes = plt.subplots(n_rows, n_cols, sharex=True, sharey=True, 
-                             figsize=(16, 12), 
-                             gridspec_kw=dict(wspace=-0.1, hspace=-0.01))
-
-    for i in range(n_rows):
-        for j in range(n_cols // 2):
-            v = X_test[np.random.randint(X_test.shape[0])]
-            probs = rbm.reconstruct(v)
-
-            # in case we've substituted with `cupy`
-            if np.__name__ != "numpy":
-                v = np.asnumpy(v)
-                probs = np.asnumpy(probs)
-
-            axes[i][2 * j].imshow(np.reshape(v, (28, 28)))
-            axes[i][2 * j + 1].imshow(np.reshape(probs, (28, 28)))
-
-            # customization; remove labels
-            axes[i][2 * j].set_xticklabels([])
-            axes[i][2 * j].set_yticklabels([])
-
-            axes[i][2 * j + 1].set_xticklabels([])
-            axes[i][2 * j + 1].set_yticklabels([])
-
-    fig.savefig("test.png")
     log.info(f"Saving to {FLAGS.output}")
     plt.savefig(FLAGS.output)
 
