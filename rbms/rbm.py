@@ -312,7 +312,7 @@ if __name__ == "__main__":
 
     for i in range(n_rows):
         for j in range(n_cols // 2):
-            v = sample_data[np.random.randint(sample_data.shape[0])]
+            v = X_test[np.random.randint(X_test.shape[0])]
             probs = reconstruct(v)
 
             # in case we've substituted with `cupy`
