@@ -313,7 +313,7 @@ if __name__ == "__main__":
     for i in range(n_rows):
         for j in range(n_cols // 2):
             v = X_test[np.random.randint(X_test.shape[0])]
-            probs = reconstruct(v)
+            probs = rbm.reconstruct(v)
 
             # in case we've substituted with `cupy`
             if np.__name__ != "numpy":
