@@ -231,3 +231,177 @@
   journal      = {Cognitive Science},
   publisher    = {Wiley}
 }
+
+@article{endres_2003,
+  author       = {Endres, D.M. and Schindelin, J.E.},
+  title        = {A new metric for probability distributions},
+  year         = 2003,
+  volume       = 49,
+  number       = 7,
+  month        = {Jul},
+  pages        = {1858–1860},
+  issn         = {0018-9448},
+  doi          = {10.1109/tit.2003.813506},
+  url          = {http://dx.doi.org/10.1109/tit.2003.813506},
+  journal      = {IEEE Transactions on Information Theory},
+  publisher    = {Institute of Electrical and Electronics Engineers
+                  (IEEE)}
+}
+
+@book{rbm_intro_smolensky,
+  author={David E. Rumelhart, James L. McClelland and the PDP Research Group, Institute for Cognitive Science, University of California, San Diego.},
+  city={Cambridge, Ma.},
+  ed={11th print.},
+  form={[BC]},
+  isbn={[0-262-68053-X]},
+  lang={eng},
+  lccn={[85024073 e02000073]},
+  oclcnum={[40638324 508286432 60863132 612201300 61307352 613502778 62230114 664598721 764240305 781712345 856734454 868610433 247774667 248384591 248613402 60445750 631611931 633114512 634243646 715828319 716357310 718013980 769236326 12837549 179701872 464791029 611984182 613572278 615327440 800843359 863548415]},
+  publisher={MIT Press},
+  title={Parallel distributed processing : explorations in the microstructure of cognition.},
+  url={[http://www.worldcat.org/oclc/40638324?referer=xid]},
+  year={1986},
+  pages={194-263}
+}
+
+@article{Fischer_2015,
+  author       = {Fischer, Asja},
+  title        = {Training Restricted Boltzmann Machines},
+  keywords =     {summer_project_2018},
+  year         = 2015,
+  volume       = 29,
+  number       = 4,
+  month        = {May},
+  pages        = {441–444},
+  issn         = {1610-1987},
+  doi          = {10.1007/s13218-015-0371-2},
+  url          = {http://dx.doi.org/10.1007/s13218-015-0371-2},
+  journal      = {KI - Künstliche Intelligenz},
+  publisher    = {Springer Nature}
+}
+
+@incollection{hinton2012practical,
+  title={A practical guide to training restricted Boltzmann machines},
+  author={Hinton, Geoffrey E},
+  booktitle={Neural networks: Tricks of the trade},
+  pages={599--619},
+  year={2012},
+  publisher={Springer}
+}
+
+@article{neal98_anneal_impor_sampl,
+  author =       {Neal, Radford M.},
+  title =        {Annealed Importance Sampling},
+  journal =      {CoRR},
+  year =         {1998},
+  url =          {http://arxiv.org/abs/physics/9803008v2},
+  abstract =     {Simulated annealing - moving from a tractable
+                  distribution to a distribution of interest via a
+                  sequence of intermediate distributions - has
+                  traditionally been used as an inexact method of
+                  handling isolated modes in Markov chain samplers.
+                  Here, it is shown how one can use the Markov chain
+                  transitions for such an annealing sequence to define
+                  an importance sampler. The Markov chain aspect
+                  allows this method to perform acceptably even for
+                  high-dimensional problems, where finding good
+                  importance sampling distributions would otherwise be
+                  very difficult, while the use of importance weights
+                  ensures that the estimates found converge to the
+                  correct values as the number of annealing runs
+                  increases. This annealed importance sampling
+                  procedure resembles the second half of the
+                  previously-studied tempered transitions, and can be
+                  seen as a generalization of a recently-proposed
+                  variant of sequential importance sampling. It is
+                  also related to thermodynamic integration methods
+                  for estimating ratios of normalizing constants.
+                  Annealed importance sampling is most attractive when
+                  isolated modes are present, or when estimates of
+                  normalizing constants are required, but it may also
+                  be more generally useful, since its independent
+                  sampling allows one to bypass some of the problems
+                  of assessing convergence and autocorrelation in
+                  Markov chain samplers.},
+  archivePrefix ={arXiv},
+  eprint =       {physics/9803008},
+  primaryClass = {physics.comp-ph},
+}
+
+
+@article{tak16_repel_attrac_metrop_algor_multim,
+  author =       {Tak, Hyungsuk and Meng, Xiao-Li and Dyk, David A.
+                  van},
+  title =        {A Repelling-Attracting Metropolis Algorithm for
+                  Multimodality},
+  journal =      {CoRR},
+  year =         2016,
+  url =          {http://arxiv.org/abs/1601.05633v5},
+  abstract =     {Although the Metropolis algorithm is simple to
+                  implement, it often has difficulties exploring
+                  multimodal distributions. We propose the
+                  repelling-attracting Metropolis (RAM) algorithm that
+                  maintains the simple-to-implement nature of the
+                  Metropolis algorithm, but is more likely to jump
+                  between modes. The RAM algorithm is a
+                  Metropolis-Hastings algorithm with a proposal that
+                  consists of a downhill move in density that aims to
+                  make local modes repelling, followed by an uphill
+                  move in density that aims to make local modes
+                  attracting. The downhill move is achieved via a
+                  reciprocal Metropolis ratio so that the algorithm
+                  prefers downward movement. The uphill move does the
+                  opposite using the standard Metropolis ratio which
+                  prefers upward movement. This down-up movement in
+                  density increases the probability of a proposed move
+                  to a different mode. Because the acceptance
+                  probability of the proposal involves a ratio of
+                  intractable integrals, we introduce an auxiliary
+                  variable which creates a term in the acceptance
+                  probability that cancels with the intractable ratio.
+                  Using several examples, we demonstrate the potential
+                  for the RAM algorithm to explore a multimodal
+                  distribution more efficiently than a Metropolis
+                  algorithm and with less tuning than is commonly
+                  required by tempering-based methods.},
+  archivePrefix ={arXiv},
+  eprint =       {1601.05633},
+  primaryClass = {stat.ME},
+}
+
+@article{lan13_wormh_hamil_monte_carlo,
+  author =       {Lan, Shiwei and Streets, Jeffrey and Shahbaba,
+                  Babak},
+  title =        {Wormhole Hamiltonian Monte Carlo},
+  journal =      {CoRR},
+  year =         2013,
+  url =          {http://arxiv.org/abs/1306.0063v2},
+  abstract =     {In machine learning and statistics, probabilistic
+                  inference involving multimodal distributions is
+                  quite difficult. This is especially true in high
+                  dimensional problems, where most existing algorithms
+                  cannot easily move from one mode to another. To
+                  address this issue, we propose a novel Bayesian
+                  inference approach based on Markov Chain Monte
+                  Carlo. Our method can effectively sample from
+                  multimodal distributions, especially when the
+                  dimension is high and the modes are isolated. To
+                  this end, it exploits and modifies the Riemannian
+                  geometric properties of the target distribution to
+                  create \emph{wormholes} connecting modes in order to
+                  facilitate moving between them. Further, our
+                  proposed method uses the regeneration technique in
+                  order to adapt the algorithm by identifying new
+                  modes and updating the network of wormholes without
+                  affecting the stationary distribution. To find new
+                  modes, as opposed to rediscovering those previously
+                  identified, we employ a novel mode searching
+                  algorithm that explores a \emph{residual energy}
+                  function obtained by subtracting an approximate
+                  Gaussian mixture density (based on previously
+                  discovered modes) from the target density function.},
+  archivePrefix ={arXiv},
+  eprint =       {1306.0063},
+  primaryClass = {stat.CO},
+}
+

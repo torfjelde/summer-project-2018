@@ -2,7 +2,10 @@
 #+AUTHOR: Tor Erlend Fjelde
 #+Title: Maximum Entropy Models
 
-* TODO Introduction
+* Issues
+- [ ] Define entropy instead as a function of a /random variable/ rather than a functional acting on probability density $p(X)$
+* Introduction
+
 * Background
 ** Shannon / Information Entropy
 Let $X$ be a /discrete/ random variable, i.e. taking values from a at most countable sample space $\Omega_X$. The probability mass of $X$ is defined by $p_X: \mathscr{P}(\Omega_X) \to [0, 1]$ such that $\sum_{x \in \Omega_X} p_X(x) = 1$, where we use the notation $\mathscr{P}(\Omega_X)$ to mean the /powerset of $\Omega_X$/. The probability measure $P_X$ is then
@@ -33,16 +36,38 @@ S_p(A) = - \sum_{x \in A}^{} p(x) \log p(x), \quad \forall A \subseteq \Omega
 It is interesting to note that $S_p$ is /minimized/ when $p(x) = 1$ and $p(y) = 0$ for all $y \ne x$, as we would be certain of the outcome, and /maximized/ if $p(x) = p(y)$, i.e. $p$ is the uniform distribution, where all outcomes are equally likely. This coincides with what one would untuitively expect from a measure of information, where taking on the uniform distribution is the sensible thing to do when we have no prior information.
 
 *** TODO Continuous random variables
-Shannon also introduced entropy of probability densities of /continuous/ random variables by simply substituting the summation in Definition ref:def:shannon-entropy by an integrand over all $x$. Unfortunately this continuous extension is not invariant under transformation, unlike $S_p$ in the discrete case. This also means that it allows /negative/ information, not satisfying the first axiom of information entropy.cite:jaynes1968prior
+Shannon also introduced entropy of probability densities of /continuous/ random variables by simply substituting the summation in Definition ref:def:shannon-entropy by an integrand over all $x$. This is often referred to as the *differential entropy*, given by
+\begin{equation*}
+S_{d}(p) = - \int p(x) \log p(x) \ dx
+\end{equation*}
+Unfortunately this definition does not share some of the desirable properties of the discrete entropy. As we will see it fails to satisfy non-negativity, transformation invariance, and, though sometimes stated to be, does not in general correspond to taking the number of hypotheses infinity in Definition ref:def:shannon-entropy.
 
+That $S_d$ can take on negative values is easily seen from considering the distribution $\text{Uniform}(0, 1 / 2)$. Then the /differential entropy/ gives us
+\begin{equation*}
+S_d(p) = - \int_0^{1/2} 2 \log 2 \ dx = - \log 2 = - 1
+\end{equation*}
+which contradicts the first axiom of information entropy as defined for the discrete case.
+
+Using the same case we can also demonstrate the scale /variance/ of $S_d(p)$. Let $Y = a X$ for some $a \in \mathbb{R}$, then
+\begin{equation*}
+S_d(p_Y) = - \int 
+\end{equation*}
+
+Therefore the following definition for entropy in the case of continuous functions was proposed by Jaynes: cite:jaynes1968prior
 #+name: def:continuous-entropy
 #+begin_definition :title ""
 Jaynes provided the following definition for the continuous case
 
 \begin{equation*}
-H_p = - \int \dd{x} p(x) \log \frac{p(x)}{m(x)}
+S(p) = - \int p(x) \log \frac{p(x)}{m(x)} \dd{x}
 \end{equation*}
-where $m(x)$, called an /invariant measure/, is proportional to the limiting density of discrete points.cite:jaynes1968prior
+where $m(x)$, called the /invariant factor/, is proportional to the limiting density of discrete points.
+
+The /invariant factor/ is simply a function which enforces /non-negativity/ and /scale invariance/, i.e. if $Y = a X$ where $X$ is a random random variable and $a \in \mathbb{R}$, then 
+\begin{equation*}
+S(p_X) = S(p_Y)
+\end{equation*}
+$m(x)$ is therefore highly dependent on the distribution in question and the transformation being made. Note that his property is most definitively something we want from a "measure of information", since $p_X = p_Y$.
 #+end_definition
 
 ** Cross-entropy and Kullback-Leibner divergence
@@ -71,6 +96,8 @@ D_{\rm{KL}}(p \ || \ q) = \mathbb{E}_p\Bigg[\log \frac{p(x \mid \theta^*)}{q(x \
 where $\theta^*$ is the optimal parameter and $\theta$ is the one we vary to approximate $p(x \mid \theta^*)$. The second term here is simply the cross-entropy above, and since $\theta^*$ is a constant, the minimization process would only depend on the second term, i.e. we have the same property of giving us the same estimate as the MLE for large $N$. Observe that in the case where $p(x \mid \theta^*) = q(x \mid \theta)$ for all $x$, the KL divergence clearly vanishes, which we would want from a similarity "measure".
 
 In fact, the KL divergence is also well-defined for continuous distributions, unlike the information entropy, as discussed earlier in Section [[*Continuous random variables]].
+
+It is worthy to note that the KL divergence is not /symmetric/, and therefore does not define a proper metric. Nonetheless, one can easily construct a metric between probability distributions from the KL divergence, called the *Jensen-Shannon entropy*.cite:endres_2003
 
 * Maximum Entropy models
 ** Principle of Maximum Entropy

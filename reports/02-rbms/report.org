@@ -1,0 +1,385 @@
+#+SETUPFILE: ../setup.org
+#+AUTHOR: Tor Erlend Fjelde
+#+Title: WORKING TITLE: Maximum Entropy models, Restricted Boltzmann Machines, and the whole shebag
+
+* TODO Introduction
+Maximum Entropy (MaxEnt) models are parametrizable probability distributions which are constructed from application of the Principle of Maximum Entropy. In general, a MaxEnt model of a discrete random variable is the distribution given by 
+\begin{equation*}
+p(x) = \frac{1}{Z} \exp( - E(x) )
+\end{equation*}
+where
+\begin{equation*}
+\begin{split}
+  E(x) &= - \sum_{i=1}^{n} \lambda_i f_i(x) \\
+  \lambda_i \in \mathbb{R} \quad \text{such that} \quad \frac{\partial Z}{\partial \lambda_i} &= F_i, \quad i = 1, \dots, n
+\end{split}
+\end{equation*}
+with $F_i$ corresponding to the constraints enforced when applying the Principle of Maximum Entropy, whose values are the parameters of the model.
+
+These kind of models, being closely related to the concept of /information entropy/, sees frequent use in multiple areas (e.g. statistcal physics, natural language processing), sometimes under names such as Boltzmann distributions in the physics literature or Markov Random Fields in the graphical modelling literature.
+
+One class of such a model are called *Boltzmann machines*. These were first introduced as a method for learning unknown "soft" constraints within systems, or equivalently, learning the $F_i$ in the expression above of a distribution from the data. cite:ackley_1985 Due to the computational complexity of the Boltzmann machines, *restricted Boltzmann machines (RBMs)* were introduced, for which tractable approximate learning schemes are more easily obtainable.
+
+* Background
+
+** Maximum Entropy Models
+
+** Boltzmann machines
+
+** Sampling methods
+
+*** Metropolis-Hastings
+
+*** Gibbs sampling
+
+* Restricted Boltzmann Machines
+** Definition
+#+name: def:restricted-boltzmann-machines
+#+begin_definition :title ""
+A *Restricted Boltzmann Machine (RBM)* is an /energy-based model/ consisting of a set of /hidden/ units $\mathcal{H} = \{ H_{\mu} \}$ and a set of /visible/ units $\mathcal{V} = \{ V_j \}$, whereby "units" we mean random variables, taking on the values $\mathbf{h}$ and $\mathbf{v}$, respectively. 
+The /restricted/ part of the name comes from the fact that we assume independence between the hidden units and the visible units, i.e.
+\begin{equation*}
+\begin{split}
+  p(h_{\mu} \mid h_1, \dots, h_{\mu - 1}, h_{\mu + 1}, \dots, h_{|\mathcal{H}|}) &= p(h_{\mu}) \\
+  p(v_j \mid v_1, \dots, v_{j - 1}, v_{j + 1}, \dots, v_{|\mathcal{V}|}) &= p(v_j)
+\end{split}
+\end{equation*}
+An *RBM* therefore assumes the following joint probability distribution of the visible and hidden units:
+\begin{equation*}
+p(\mathbf{v}, \mathbf{h}) = \frac{1}{Z} \tilde{p}(\mathbf{v}, \mathbf{h}) = \exp \Big( - E(\mathbf{v}, \mathbf{h}) \Big)
+\end{equation*}
+with $Z$ being the partition function (normalization factor), $\tilde{p}$ denoting the unnormalized density, and the energy function is given by
+\begin{equation*}
+\begin{split}
+  E(\mathbf{v}, \mathbf{h}) &= - \mathbf{c}^T \mathbf{v} - \mathbf{b}^T \mathbf{h} - \mathbf{v}^T \mathbf{W} \mathbf{h} \\
+  &= - c_j v_j - b_{\mu} h_{\mu} - v_j W_{j \mu} h_{\mu}
+\end{split}
+\end{equation*}
+implicitly summing over repeating indices.
+#+end_definition
+
+** Log-likelihood
+From Definition ref:def:restricted-boltzmann-machines, we have
+\begin{equation*}
+\log p(\mathbf{v}) = \log \bigg( \sum_{\mathbf{h}}^{} \exp \Big( - E(\mathbf{v}, \mathbf{h} \Big) \bigg) - \log Z
+\end{equation*}
+Now suppose we're given a set of samples $\{ \mathbf{v}^{(n)}, n = 1, \dots, N \}$, then the likelihood (assuming i.i.d. of the $\mathbf{v}^{(n)}$) is given by
+\begin{equation*}
+p\left(\big\{ c_j, b_{\mu}, W_{j \mu} \big\} \mid \big\{ \mathbf{v}^{(n)} \big\}\right) = \prod_{n = 1}^N p\left(\mathbf{v}^{(n)} \mid \big\{ c_j, b_{\mu}, W_{j \mu} \big\}\right)
+\end{equation*}
+Taking the log of this expression, and substituing in the above expression for $\log p(\mathbf{v})$, we have
+\begin{equation*}
+\begin{split}
+  \mathcal{L}(\big\{ c_j, b_{\mu}, W_{j \mu} \big\}) &= \sum_{n=1}^{N} \Bigg[ \log \bigg( \sum_{\mathbf{h}}^{} \tilde{p} \Big( \mathbf{v}^{(n)}, \mathbf{h} \Big) \bigg) - \log Z \Bigg] \\
+  &= \sum_{n=1}^{N} \Bigg[ \log \bigg( \sum_{\mathbf{h}}^{} \tilde{p} \Big( \mathbf{v}^{(n)}, \mathbf{h} \Big) \bigg) \Bigg] - N \log Z
+\end{split}
+\end{equation*}
+Let $\theta \in \big\{ c_j, b_{\mu}, W_{j \mu} \big\}$, taking the partial derivative wrt. $\theta$ for the n-th term we have
+\begin{equation*}
+\begin{split}
+  \frac{\partial   }{\partial \theta} \Bigg[ \log \bigg( \sum_{\mathbf{h}}^{} \tilde{p}\Big( \mathbf{v}^{(n)}, \mathbf{h} \Big) - \log Z \Bigg] 
+  &= - \frac{\sum_{\mathbf{h}}^{} \frac{\partial E(\mathbf{v}, \mathbf{h})}{\partial \theta} \tilde{p}\Big( \mathbf{v}^{(n)}, \mathbf{h} \Big)}{\sum_{\mathbf{h}}^{} \tilde{p}\Big( \mathbf{v}^{(n)}, \mathbf{h} \Big)} \\
+  & \quad - \frac{1}{Z} \frac{\partial Z}{\partial \theta}
+\end{split}
+\end{equation*}
+
+The first term can be written as an expectation
+\begin{equation*}
+\frac{   \sum_{\mathbf{h}}^{} \frac{\partial E(\mathbf{v}^{(n)}, \mathbf{h})}{\partial \theta} \tilde{p}\Big( \mathbf{v}^{(n)}, \mathbf{h} \Big)}{\sum_{\mathbf{h}}^{} \tilde{p}\Big( \mathbf{v}^{(n)}, \mathbf{h} \Big)} = \mathbb{E} \Bigg[ \frac{\partial E(\mathbf{v}^{(n)}, \mathbf{h})}{\partial \theta} \ \Big| \ \mathbf{v}^{(n)} \Bigg]
+\end{equation*}
+since on the left-hand side (LHS) we're marginalizing over all $\mathbf{h}$ and then normalizing wrt. the same distribution we just summed over.
+For the second term recall that $Z = \sum_{\mathbf{v}, \mathbf{h}}^{} \exp \Big( - E(\mathbf{v}, \mathbf{h}) \Big)$, therefore
+\begin{equation*}
+\frac{1}{Z} \frac{\partial Z}{\partial \theta} = - \frac{1}{Z} \sum_{\mathbf{v}, \mathbf{h}}^{} \frac{\partial E(\mathbf{v}, \mathbf{h})}{\partial \theta} \exp \Big( - E(\mathbf{v}, \mathbf{h}) \Big) = - \mathbb{E} \Bigg[ \frac{\partial E(\mathbf{v}, \mathbf{h})}{\partial \theta} \Bigg]
+\end{equation*}
+Substituting it all back into the partial derivative of the log-likelihood, we end get
+\begin{equation*}
+\frac{\partial \mathcal{L}}{\partial \theta} = - \sum_{n=1}^{N} \mathbb{E} \Bigg[ \frac{\partial E(\mathbf{v}^{(n)}, \mathbf{h})}{\partial \theta} \ \Bigg| \ \mathbf{v}^{(n)}\Bigg] + N \  \mathbb{E} \Bigg[ \frac{\partial E(\mathbf{v}, \mathbf{h})}{\partial \theta} \Bigg]
+\end{equation*}
+Where the expectations are all over the probability distribution defined by the /model/. Since maximizing $\mathcal{L}$ is equivalent to maximizing $\mathcal{L} / N$ we instead consider the expression in Lemma ref:lemma:ideal-log-likelihood-gradient-energy-based-model.
+
+#+name: lemma:ideal-log-likelihood-gradient-energy-based-model
+#+begin_lemma :title ""
+Given a set of i.i.d. drawn samples $\{ \mathbf{v}^{(n)}, n = 1, \dots, N \}$, the gradient of the log-likelihood is given by
+\begin{equation*}
+\frac{1}{N} \frac{\partial \mathcal{L}}{\partial \theta} = - \frac{1}{N} \sum_{n=1}^{N} \mathbb{E} \Bigg[ \frac{\partial E(\mathbf{v}^{(n)}, \mathbf{h})}{\partial \theta} \ \Bigg| \ \mathbf{v}^{(n)}\Bigg] + \mathbb{E} \Bigg[ \frac{\partial E(\mathbf{v}, \mathbf{h})}{\partial \theta} \Bigg]
+\end{equation*}
+where the expectations are taken wrt. the RBM, as defined in Definition ref:def:restricted-boltzmann-machines
+#+end_lemma
+
+Observe that the first term in Lemma ref:lemma:ideal-log-likelihood-gradient-energy-based-model can be written
+\begin{equation*}
+\frac{1}{N} \sum_{n=1}^{N} \mathbb{E} \Bigg[ \frac{\partial E(\mathbf{v}^{(n)}, \mathbf{h})}{\partial \theta} \ \Bigg| \ \mathbf{v}^{(n)}\Bigg] = \left\langle \mathbb{E} \Bigg[ \frac{\partial E(\mathbf{v}, \mathbf{h})}{\partial \theta} \ \Bigg| \ \mathbf{v} \Bigg] \right\rangle_{\left\{ \mathbf{v}^{(n)} \right\}}
+\end{equation*}
+where we use angular brackets $\left\langle \cdot \right\rangle$ to denote the /empirical/ expectation over the data $\{ \mathbf{v}^{(n)} \}$. Then,
+\begin{equation}\label{eqn:full-ll-gradient}
+\frac{1}{N} \frac{\partial \mathcal{L}}{\partial \theta} = - \left\langle \mathbb{E} \Bigg[ \frac{\partial E(\mathbf{v}, \mathbf{h})}{\partial \theta} \ \Bigg| \ \mathbf{v} \Bigg] \right\rangle_{\left\{ \mathbf{v}^{(n)} \right\}} + \mathbb{E} \Bigg[ \frac{\partial E(\mathbf{v}, \mathbf{h})}{\partial \theta} \Bigg]
+\end{equation}
+*** Approximating the log-likelihood gradient
+In general, the second term in Eq. ref:eqn:full-ll-gradient is clearly intractable, as we would have to sum over all possible $\mathbf{v}$ and $\mathbf{h}$. The first term should be less computationally expensive, due to only having to sum over all /observed/ $\mathbf{v}$, rather than all possible $\mathbf{v}$. Nonetheless this might also be intractable as we would still have to marginalize over all the hidden states $\mathbf{h}$ with $\mathbf{v}$ fixed to $\mathbf{v}^{(n)}$. In general we need to also sample $\mathbf{h}$ to obtain the conditional expectation. For example we could sample $M$ hidden states $\mathbf{h}$ for each observed $\mathbf{v}^{(n)}$, i.e.
+\begin{equation*}
+\begin{split}
+  \left\langle \mathbb{E} \Bigg[ \frac{\partial E(\mathbf{v}, \mathbf{h})}{\partial \theta} \ \Bigg| \ \mathbf{v} \Bigg] \right\rangle_{\left\{ \mathbf{v}^{(n)} \right\}} 
+  &= \frac{1}{N} \sum_{n=1}^{N} \mathbb{E} \Bigg[ \frac{\partial E(\mathbf{v}^{(n)}, \mathbf{h})}{\partial \theta} \ \Bigg| \ \mathbf{v}^{(n)}\Bigg] \\
+  &\approx \frac{1}{N} \sum_{n=1}^{N} \frac{1}{M} \sum_{m=1}^{M} \frac{\partial E(\mathbf{v}^{(n)}, \mathbf{h}^{(m)})}{\partial \theta}, \\
+  &  \qquad \text{with } \mathbf{h}^{(m)} \sim p(\mathbf{h})
+\end{split}
+\end{equation*}
+This still leaves the problem of sampling from $p(\mathbf{h})$, which is not necessarily known. 
+Most often $M = 1$ is used, corresponding to Gibbs sampling.cite:Fischer_2015 As we will see later (see Remark ref:rmk:binary-units-simply-expectation), in certain cases, the first term can in fact be computed analytically.
+
+Going forward we will use the following notation
+\begin{equation*}
+\left\langle \mathbb{E} \Bigg[ \frac{\partial E(\mathbf{v}, \mathbf{h})}{\partial \theta} \ \Bigg| \ \mathbf{v} \Bigg] \right\rangle_{\left\{ \mathbf{v}^{(n)} \right\}}
+= \left\langle \frac{\partial E(\mathbf{v}, \mathbf{h})}{\partial \theta} \right\rangle_{\text{data}}
+\end{equation*}
+which is often used in the literature.cite:Fischer_2015,mehta18_high_bias_low_varian_introd The $\{ \mathbf{v}^{(n)} \}$ was used to make explicit that we're computing the empirical expectation conditioned on visible units over the /visible/ units, /not/ the joint expectation over $p(\mathbf{v}, \mathbf{h})$.
+
+It might also be worth noting that the second expectation in Eq. ref:eqn:full-ll-gradient can also be written as an expectation of the /conditional/ expectation over $\mathbf{h} \mid \mathbf{v}$, i.e.
+\begin{equation*}\label{eqn:z-conditional-expectation}
+\begin{split}
+  \mathbb{E} \Bigg[ \frac{\partial E(\mathbf{v}, \mathbf{h})}{\partial \theta} \Bigg] 
+  &= \sum_{\mathbf{v}, \mathbf{h}}^{} p(\mathbf{v}, \mathbf{h}) \frac{\partial E(\mathbf{v}, \mathbf{h})}{\partial \theta} \\
+  &= \sum_{\mathbf{v}, \mathbf{h}}^{} p(\mathbf{h} \mid \mathbf{v}) p(\mathbf{v}) \frac{\partial E(\mathbf{v}, \mathbf{h})}{\partial \theta} \\ 
+  &= \sum_{\mathbf{v}}^{} p(\mathbf{v}) \sum_{\mathbf{h}}^{} p(\mathbf{h} \mid \mathbf{v}) \frac{\partial E(\mathbf{v}, \mathbf{h})}{\partial \theta} \\
+  &= \mathbb{E} \Bigg[ \mathbb{E} \bigg[ \frac{\partial E(\mathbf{v}, \mathbf{h})}{\partial \theta} \ \bigg| \ \mathbf{v} \bigg] \Bigg]
+\end{split}
+\end{equation*}
+
+This is useful to know later on when we want to approximate this expectation.
+
+The approximation to the gradient of the log-likelihood can then be written
+\begin{equation}\label{eqn:energy-gradient-rbm}
+\frac{1}{N} \frac{\partial \mathcal{L}}{\partial \theta} \approx - \left\langle \frac{\partial E(\mathbf{v}, \mathbf{h})}{\partial \theta} \right\rangle_{\text{data}} + \left\langle \frac{\partial E(\mathbf{v}, \mathbf{h})}{\partial \theta} \right\rangle_{\text{model}}
+\end{equation}
+Making $\theta$ explicit in Eq. ref:eqn:energy-gradient-rbm with an RBM from Definition ref:def:restricted-boltzmann-machines, and approximating these expectations using /empirical/ estimates, we have
+\begin{equation}
+\begin{split}
+  \frac{1}{N} \frac{\partial \mathcal{L}}{\partial c_j} &= \left\langle v_j \right\rangle_{\text{data}} - \left\langle v_j \right\rangle_{\text{model}} \\
+  \frac{1}{N} \frac{\partial \mathcal{L}}{\partial b_{\mu}} &= \left\langle h_{\mu} \right\rangle_{\text{data}} - \left\langle h_{\mu} \right\rangle_{\text{model}} \\
+  \frac{1}{N} \frac{\partial \mathcal{L}}{\partial W_{j \mu}} &= \left\langle v_j h_{\mu} \right\rangle_{\text{data}} - \left\langle v_j h_{\mu} \right\rangle_{\text{model}}
+\end{split}
+\end{equation}
+Observe that the signs have switched compared to Eq. ref:eqn:energy-gradient-rbm, which is simply due to the fact that $E(\mathbf{v}, \mathbf{h})$ depends negatively on all the variables $\{ v_j, h_{\mu}, W_{j \mu} \}$.
+
+We will now see how we can in fact produce these empirical estimates for the different quantities used in computation of the gradients as seen above.
+* Training
+In this section we will only consider the standard Bernoulli RBMs, which assume both the hidden and visible variables are Bernoulli random variables, only taking on values in $\{ 0, 1 \}$. As we will see in Section [[*Extending to other distributions]], we can extend the methods used for Bernoulli RBMs quite easily to different types of RBMs.
+
+** Approximating the log-likelihood gradient
+Suppose now that both the visible and hidden units are Bernoulli random variables, i.e. only taking on values $\{ 0, 1 \}$. We then have
+\begin{equation*}
+\mathbb{E} \big[ \mathbf{h} \mid \mathbf{v} \big] = \prod_{\mu = 1}^{|\mathcal{H}|} p \big( H_{\mu} = 1 \mid \mathbf{v} \big)
+\end{equation*}
+Substituing this into Eq. ref:eqn:energy-gradient-rbm gives us a much simpler expression for the gradients:
+\begin{equation}\label{eqn:ll-grads-bernoulli}
+\begin{split}
+  \frac{1}{N} \frac{\partial \mathcal{L}}{\partial c_j} &= \frac{1}{N} \sum_{n=1}^{N} v_j^{(n)} - \mathbb{E}[v_j] \\
+  \frac{1}{N} \frac{\partial \mathcal{L}}{\partial b_{\mu}} &= \frac{1}{N} \sum_{n=1}^{N} p(H_{\mu} = 1 \mid \mathbf{v}^{(n)}) \\
+  & \quad - \mathbb{E} \big[ p( H_{\mu} = 1 \mid \mathbf{v}) \big] \\
+  \frac{1}{N} \frac{\partial \mathcal{L}}{\partial W_{j \mu}} &= \frac{1}{N} \sum_{n=1}^{N} v_j p \big(H_{\mu} = 1 \mid \mathbf{v}^{(n)} \big) \\
+  & \quad - \mathbb{E} \Big[ v_j p(H_{\mu} = 1 \mid \mathbf{v}) \Big]
+\end{split}
+\end{equation}
+since
+\begin{equation*}
+\mathbb{E} \Big[ \mathbb{E} [ h_{\mu} \mid \mathbf{v} ] \Big] = \mathbb{E} [p(H_{\mu} = 1 \mid \mathbf{v})]
+\end{equation*}
+and similarily for the other terms. In these equations, the first terms corresponding to the empirical expectations over the data are now tractable, but we still have terms involving expectations over all possible $\mathbf{v}$, which remain intractable.[fn:2]
+
+To address this, we decide to approximate these expectations by sampling $\mathbf{v}$. By the Law of Large numbers: cite:RossSheldonM2014Afci
+\begin{equation*}
+\mathbb{E}[f(x)] \overset{p}{=} \lim_{M \to \infty} \frac{1}{M} \sum_{m=1}^{M} f\big(x^{(m)}\big) 
+\end{equation*}
+Hence, we can approximate the gradients in Eq. ref:eqn:ll-grads-bernoulli by
+\begin{equation}\label{eqn:rbm-grads-tractable}
+\begin{split}
+  \frac{1}{N} \frac{\partial \mathcal{L}}{\partial c_j} &= \frac{1}{N} \sum_{n=1}^{N} v_j^{(n)} - \frac{1}{M} \sum_{m=1}^{M} \hat{\mathbf{v}}^{(m)} \\
+  \frac{1}{N} \frac{\partial \mathcal{L}}{\partial b_{\mu}} &= \frac{1}{N} \sum_{n=1}^{N} p(H_{\mu} = 1 \mid \mathbf{v}^{(n)}) \\
+  & \quad - \frac{1}{M} \sum_{m=1}^{M} p\big( H_{\mu} = 1 \mid \hat{\mathbf{v}}^{(m)} \big) \\
+  \frac{1}{N} \frac{\partial \mathcal{L}}{\partial W_{j \mu}} &= \frac{1}{N} \sum_{n=1}^{N} v_j p \big(H_{\mu} = 1 \mid \mathbf{v}^{(n)} \big) \\
+  & \quad - \frac{1}{M} \sum_{m=1}^{M} \hat{v}_j^{(m)} p\big(H_{\mu} = 1 \mid \hat{\mathbf{v}}^{(m)} \big) \Big]
+\end{split}
+\end{equation}
+where we assume $\hat{\mathbf{v}}^{(m)}$ to be $M$ i.i.d. samples drawn from the /model/. It is mostly common to let $M = N$, i.e. draw one sample from the model for each sample of data.[fn:1]
+
+The gradients in Eq. ref:eqn:rbm-grads-tractable are tractable to compute, as long as drawing i.i.d. samples of $\mathbf{v}$ is also tractable. 
+
+For the purpose of readability, let us consider each term of the gradient of $\mathcal{L}$ separately and $M = N$, i.e.
+\begin{equation}
+\begin{split}\label{eq:rbm-grads-sample-approx}
+  \frac{\partial \mathcal{L}}{\partial c_j}\Big|_n &= v_j^{(n)} - \hat{v}_j^{(k)} \\
+  \frac{\partial \mathcal{L}}{\partial b_{\mu}}\Big|_n &= p(H_{\mu} = 1 \mid \mathbf{v}^{(n)}) - p\big( H_{\mu} = 1 \mid \hat{\mathbf{v}}^{(k)} \big) \\
+  \frac{\partial \mathcal{L}}{\partial W_{j \mu}}\Big|_n &= v_j p \big(H_{\mu} = 1 \mid \mathbf{v}^{(n)} \big) - \hat{v}_j^{(k)} p\big(H_{\mu} = 1 \mid \hat{\mathbf{v}}^{(k)} \big)
+\end{split}
+\end{equation}
+One way to obtain these samples is to run a Gibbs sampler on the machine for some $k$ number of steps. This results in a /sequence/ $\big( \tilde{\mathbf{v}}^{(t)}, t = 1, \dots,k  \big)$ of correlated samples from the RBM. With sufficient large $k$, the empirical distribution of these $\tilde{\mathbf{v}}^{(t)}$ will converge to the distribution $p(\mathbf{v})$ as wanted. It therefore makes sense to take the k-th (last sample in the sequence) as our sample, and use this as our $\hat{\mathbf{v}}^{(n)}$. Then Eq. ref:eq:rbm-grads-sample-approx becomes
+\begin{equation}
+\begin{split}\label{eq:rbm-grads-sample-approx-sampler}
+  \frac{\partial \mathcal{L}}{\partial c_j}\Big|_n &= v_j^{(n)} - \tilde{v}_j^{(k)} \\
+  \frac{\partial \mathcal{L}}{\partial b_{\mu}}\Big|_n &= p(H_{\mu} = 1 \mid \mathbf{v}^{(n)}) - p\big( H_{\mu} = 1 \mid \tilde{\mathbf{v}}^{(k)} \big) \\
+  \frac{\partial \mathcal{L}}{\partial W_{j \mu}}\Big|_n &= v_j p \big(H_{\mu} = 1 \mid \mathbf{v}^{(n)} \big) - \tilde{v}_j^{(k)} p\big(H_{\mu} = 1 \mid \tilde{\mathbf{v}}^{(k)} \big)
+\end{split}
+\end{equation}
+where $\tilde{\mathbf{v}}^{(k)}$ is the last sample in the chain.
+
+Eq. ref:eq:rbm-grads-sample-approx-sampler is the foundation of the most of the algorithms being used to train RBMs. On its own, Eq. ref:eq:rbm-grads-sample-approx-sampler is of course a possible learning scheme, but as we will see one can improve this further my making some changes to the sampling process.
+** Contrastive Divergence (CD)
+From Eq. ref:eq:rbm-grads-sample-approx-sampler, understanding *Contrastive Divergence (CD)*, the most commonly used algorithm for training RBMs, becomes trivial.cite:ackley_1985 Normally, one would initialize the sampler randomly and then sample a chain of $k$ steps. The only difference with CD, is that we instead initialize the sampler using /one of the data samples $\mathbf{v}^{(n)}$/. We will refer to Contrastive Divergence with $k$ steps to draw each sample as *CD-k*. The full procedure can be seen in Algorithm ref:alg:contrastive-divergence.
+
+\begin{algorithm}[H]\label{alg:contrastive-divergence}
+  \KwData{Observations of the visible units: $\{ \mathbf{v}^{(n)}, n = 1, \dots, N \}$}
+  \KwResult{Estimated parameters for an RBM: $(\mathbf{b}, \mathbf{c}, \mathbf{W})$}
+  $b_j := 0$ for $j = 1, \dots, |\mathcal{V}|$ \\
+  $c_{\mu} := 0$ for $\mu = 1, \dots, |\mathcal{H}|$ \\
+  $W_{j\mu} \sim \mathcal{N}(0, 0.01)$ for $(j, \mu) \in \left\{ 1, \dots, |\mathcal{V}| \right\} \times \left\{ 1, \dots, |\mathcal{H}| \right\}$ \\
+  \While{not converged}{
+    $\Delta b_j := 0$ \\
+    $\Delta c_{\mu} := 0$ \\
+    $\Delta W_{j \mu} := 0$ \\
+    \For{$n = 1, \dots, N$}{
+      \tcp{initialize sampling procedure}
+      $\hat{\mathbf{v}} := \mathbf{v}^{(n)}$ \\
+      \tcp{sample using Gibbs sampling}
+      \For{$t = 1, \dots, k$}{
+        $\hat{\mathbf{h}} \sim p(\mathbf{h} \mid \hat{\mathbf{v}})$ \\
+        $\hat{\mathbf{v}} \sim p(\mathbf{v} \mid \hat{\mathbf{h}})$
+      }
+      \tcp{accumulate changes}
+      $\Delta b_j \leftarrow \Delta b_j + v_j^{(n)} - \hat{v}_j$ \\
+      $\Delta c_{\mu} \leftarrow \Delta c_{\mu} + p\big(H_{\mu} = 1 \mid \mathbf{v}^{(n)} \big) - p \big( H_{\mu} = 1 \mid  \hat{\mathbf{v}} \big)$ \\
+      $\Delta W_{j \mu} \leftarrow \Delta W_{j \mu} + v_j^{(n)} p\big(H_{\mu} = 1 \mid \mathbf{v}^{(n)} \big) -  \hat{v}_j p \big( H_{\mu} = 1 \mid \hat{\mathbf{v}} \big)$ \\
+    }
+    \tcp{update the parameters of the RBM using average gradient}
+    $b_j \leftarrow b_j + \frac{\Delta b_j}{N}$ \\
+    $h_{\mu} \leftarrow h_{\mu} + \frac{\Delta h_{\mu}}{N}$ \\
+    $W_{j \mu} \leftarrow W_{j \mu} + \frac{\Delta W_{j \mu}}{N}$ \\
+  }
+  \caption{\textbf{Contrastive Divergence (CD-k)} with $k$ sampling steps.}
+\end{algorithm}
+
+*** Persistent Contrastive Divergence (PCD-k)
+A slightly different version of CD-k is *Persistent Contrastive Divergence*, where instead of initializing the sampler by $\mathbf{v}^{(n)}$ for each $n$, we don't re-initialize the sampler at all between data samples. Instead we use the final state of the sampling chain from when we sampled for, say $\mathbf{v}^{(n')}$, to initialize the sampler when sampling for the next data point, say $\mathbf{v}^{(n)}$. The full procedure can be seen in Algorithm ref:alg:persistent-contrastive-divergence.
+
+\begin{algorithm}[H]\label{alg:persistent-contrastive-divergence}
+  \KwData{Observations of the visible units: $\{ \mathbf{v}^{(n)}, n = 1, \dots, N \}$}
+  \KwResult{Estimated parameters for an RBM: $(\mathbf{b}, \mathbf{c}, \mathbf{W})$}
+  $b_j := 0$ for $j = 1, \dots, |\mathcal{V}|$ \\
+  $c_{\mu} := 0$ for $\mu = 1, \dots, |\mathcal{H}|$ \\
+  $W_{j\mu} \sim \mathcal{N}(0, 0.01)$ for $(j, \mu) \in \left\{ 1, \dots, |\mathcal{V}| \right\} \times \left\{ 1, \dots, |\mathcal{H}| \right\}$ \\
+  \While{not converged}{
+    $\Delta b_j := 0$ \\
+    $\Delta c_{\mu} := 0$ \\
+    $\Delta W_{j \mu} := 0$ \\
+    \tcp{initialize sampling procedure BEFORE training loop}
+    $\hat{\mathbf{v}} := \mathbf{v}^{(n)}$ for some $n \in \left\{ 1, \dots, N \right\}$ \\
+    \For{$n = 1, \dots, N$}{
+      \tcp{sample using Gibbs sampling}
+      \tcp{using final sample from previous chain as starting point}
+      \For{$t = 1, \dots, k$}{
+        $\hat{\mathbf{h}} \sim p(\mathbf{h} \mid \hat{\mathbf{v}})$ \\
+        $\hat{\mathbf{v}} \sim p(\mathbf{v} \mid \hat{\mathbf{h}})$
+      }
+      \tcp{accumulate changes}
+      $\Delta b_j \leftarrow \Delta b_j + v_j^{(n)} - \hat{v}_j$ \\
+      $\Delta c_{\mu} \leftarrow \Delta c_{\mu} + p\big(H_{\mu} = 1 \mid \mathbf{v}^{(n)} \big) - p \big( H_{\mu} = 1 \mid  \hat{\mathbf{v}} \big)$ \\
+      $\Delta W_{j \mu} \leftarrow \Delta W_{j \mu} + v_j^{(n)} p\big(H_{\mu} = 1 \mid \mathbf{v}^{(n)} \big) -  \hat{v}_j p \big( H_{\mu} = 1 \mid \hat{\mathbf{v}} \big)$ \\
+    }
+    \tcp{update the parameters of the RBM using average gradient}
+    $b_j \leftarrow b_j + \frac{\Delta b_j}{N}$ \\
+    $h_{\mu} \leftarrow h_{\mu} + \frac{\Delta h_{\mu}}{N}$ \\
+    $W_{j \mu} \leftarrow W_{j \mu} + \frac{\Delta W_{j \mu}}{N}$ \\
+  }
+  \caption{\textbf{Persistent Contrastive Divergence (PCD-k)} with $k$ steps. Initialize next chain from final state of previous chain.}
+\end{algorithm}
+
+** Parallel Tempering (PT)
+As seen in Section [[*Approximating the log-likelihood gradient]] we can approximate the expectations by sampling from the model using MCMC-based methods. As mentioned, these sampling methods does not necessarily produce i.i.d. samples, and thus worse gradient-approximations. In Section [[*Contrastive Divergence (CD)]] therefore we considered different schemes for initializing the sampler, in attempt to improve the quality of the samples.
+
+*Parallel Tempering (PT)* is a method which attempts to improve the sample-quality, not by changing the initialization scheme, but by altering the sampling procedure itself.cite:Fischer_2015 It's a method heavily inspired by /Simulated Annealing (SA)/, which is heuristic used with MCMC samplers to deal with isolated modes in the target distribution.cite:neal98_anneal_impor_sampl In PT we introduce supplementary Gibbs chains from a /sequence of distributions/ $(p_1, p_2, \dots, p_R)$, where $R \in \mathbb{N}$, such that
+\begin{equation*}
+p_1 = p \quad \text{and} \quad p_r = f(p_r, p_{r - 1}) p_{r-1}, \quad r = 2, \dots, R
+\end{equation*}
+where $p$ is the target distribution and $f$ is a /transition probabilitiy/ between $p_r$ and $p_{r - 1}$. This is often viewed as two different basins of temperatures $T_r$ and $T_{r - 1}$, which exchange particles with probability $f(p_r, p_{r - 1})$.
+
+In the case of RBMs we can easily construct these /tempered distributions/ by letting $1 = T_1 < T_2 < \dots < T_R$ and 
+\begin{equation*}
+p_r(\mathbf{v}, \mathbf{h}) = \frac{1}{Z_r} \exp \Bigg( \frac{1}{T_r} E(\mathbf{v}, \mathbf{h}) \Bigg)
+\end{equation*}
+where $Z_r$ is the partition function corresponding to $p_r$. Clearly
+\begin{equation*}
+p(\mathbf{v}, \mathbf{h}) = p_1(\mathbf{v}, \mathbf{h}) = \frac{1}{Z} \exp \Big( E(\mathbf{v}, \mathbf{h}) \Big)
+\end{equation*}
+as wanted. First we sample form each of these tempered distributions using Gibbs sampling, producing the sequence of samples $\Big( \big( \mathbf{v}_1, \mathbf{h}_1 \big), \dots, \big( \mathbf{v}_R, \mathbf{h}_R \big) \Big)$. We then /swap/ the samples $(\mathbf{v}_{r - 1}, \mathbf{h}_{r - 1})$ and $(\mathbf{v}_r, \mathbf{h}_r)$ with probability
+\begin{equation*}
+A\Big((\mathbf{v}_{r - 1}, \mathbf{h}_{r-1}), (\mathbf{v}_r, \mathbf{h}_r) \Big) = 
+\min \left\{ 1, \frac{p_r(\mathbf{v}_{r - 1}, \mathbf{h}_{r - 1}) p_{r - 1}(\mathbf{v}_r, \mathbf{h}_r)}{p_r(\mathbf{v}_{r}, \mathbf{h}_{r}) p_{r - 1}(\mathbf{v}_{r - 1}, \mathbf{h}_{r - 1})} \right\}
+\end{equation*}
+which in the case of RBMs is,
+\begin{equation*}
+\begin{split}
+  & \frac{p_r(\mathbf{v}_{r - 1}, \mathbf{h}_{r - 1}) p_{r - 1}(\mathbf{v}_r, \mathbf{h}_r)}{p_r(\mathbf{v}_{r}, \mathbf{h}_{r}) p_{r - 1}(\mathbf{v}_{r - 1}, \mathbf{h}_{r - 1})} \\
+   = & \exp \Bigg[ \Bigg( \frac{1}{T_r} - \frac{1}{T_{r - 1}} \Bigg) \Big( E(\mathbf{v}_r, \mathbf{h}_r) - E(\mathbf{v}_{r - 1}, \mathbf{h}_{r - 1}) \Big)  \Bigg]
+\end{split}
+\end{equation*}
+potentially producing, with probability $A\Big((\mathbf{v}_{r - 1}, \mathbf{h}_{r-1}), (\mathbf{v}_r, \mathbf{h}_r) \Big)$, the new sequence
+\begin{equation*}
+\Big( \big( \mathbf{v}_1, \mathbf{h}_1 \big), \dots, \big( \mathbf{v}_r, \mathbf{h}_r \big), \big( \mathbf{v}_{r - 1}, \mathbf{h}_{r - 1} \big), \dots, \big( \mathbf{v}_R, \mathbf{h}_R \big) \Big)
+\end{equation*}
+We perform these swaps $R - 1$ times, starting with $p_{R - 1}, p_{R}$, finishing with $p, p_2$. Finally, we use the samples which are now in the first position as the samples from $p$.
+
+From Section [[*Metropolis-Hastings]] we can recognize this expression as the Metropolis-Hastings acceptance ratio with transition probabilities $f_r$ and $f_{r - 1}$, and this produces a valid sampling chain.cite:neal98_anneal_impor_sampl
+
+Even though there is no rigorous theoretical founding for why one would want to do this, one can intuitively see that as $T_r$ becomes larger, $p_r$ becomes more similar to the uniform distribution. This then leads to a larger sample-variance, thus increasing the /mixing rate/ of the Gibbs chain. This is also seen empirical by Neal.cite:neal98_anneal_impor_sampl Hence, we're left with less biased samples, and thus the gradient approximations from Eq. ref:eq:rbm-grads-sample-approx-sampler become less biased. Of course this comes at a cost of more computation.
+
+In Section [[*CD-k vs. PT with k tempered distribution]] we compare CD-k and single-step PT with $k$ tempered distributions on some toy-problems. Both these method instances ought to have approximately the same computational cost, with a slightly higher memory usage by PT.
+
+\begin{algorithm}[H]\label{alg:contrastive-divergence}
+  \KwData{Temperatures: $\{ 1, T_2, \dots, T_R \}$}
+  \KwResult{Samples: $\{ \big( \hat{\mathbf{v}}^{(1)}, \hat{\mathbf{h}}^{(1)} \big), \dots, \big( \hat{\mathbf{v}}^{(M)}, \hat{\mathbf{h}}^{(M)} \big) \}$}
+  \For{m = 1, \dots, M}{
+    \For{r = 1, \dots, R}{
+      \tcp{sample using Gibbs sampling}
+      \For{$t = 1, \dots, k$}{
+        $\hat{\mathbf{h}} \sim p_r(\mathbf{h} \mid \hat{\mathbf{v}})$ \\
+        $\hat{\mathbf{v}} \sim p_r(\mathbf{v} \mid \hat{\mathbf{h}})$
+      }
+      $\mathbf{v}_r := \hat{\mathbf{v}}$ \\
+      $\mathbf{h}_r := \hat{\mathbf{h}}$ \\
+    }
+    \tcp{swap ("exchange particles")}
+    \For{r = R, R - 1, \dots, 2}{
+      $A := \exp \Bigg[ \Big( \frac{1}{T_r} - \frac{1}{T_{r - 1}} \Big) \Big( E(\mathbf{v}_r, \mathbf{h}_r) - E(\mathbf{v}_{r - 1}, \mathbf{h}_{r - 1}) \Big)  \Bigg]$ \\
+      $u \sim \text{Uniform}(0, 1)$ \\
+      \If{u < A}{
+        $\big( \mathbf{v}_{r - 1}, \mathbf{h}_{r - 1} \big), \big( \mathbf{v}_{r}, \mathbf{h}_{r} \big) := \big( \mathbf{v}_{r}, \mathbf{h}_{r} \big), \big( \mathbf{v}_{r - 1}, \mathbf{h}_{r - 1} \big)$
+      }
+    }
+    $\hat{\mathbf{v}}^{(m)} := \mathbf{v}_1$ \\
+    $\hat{\mathbf{h}}^{(m)} := \mathbf{h}_1$ \\
+  }
+  \caption{\textbf{Simulated Annealing of an RBM} with $k$ sampling steps. This process is used to generate samples in Parallel Tempering.}
+\end{algorithm}
+* Estimating the partition function
+** Annealed Importance Sampling
+
+* Extending to other distributions
+* Experiments
+All experiments in this section are carried out by the /insanely/ popular machine-learning package =ml= by Tor Erlend Fjelde, found at [[https://github.com/torfjelde/ml]].
+
+** CD-k vs. PT with k tempered distribution
+* Discussion
+
+* Appendix
+** Gaussian RBMs
+
+
+bibliographystyle:unsrt
+bibliography:../../references.bib
+
+* Footnotes
+
+[fn:2] It is worth noting that in some cases it is advised to also sample $\mathbf{h}$ to approximate the expectation, rather than using the $\mathbb{E}[h_{\mu} \mid \mathbf{v}] = p(H_{\mu} = 1 \mid \mathbf{v})$.cite:hinton2012practical But in general using $p(H_{\mu} = 1 \mid \mathbf{v})$ and only sample $\mathbf{v}$ is empirically shown to reduce variance of the approximation.cite:Fischer_2015
+
+[fn:1] In these cases, with $M = N$, we usually also make use of batch training with Stochastic Gradient Ascent over multiple epochs. This way we end up performing this sampling procedure once for each data sample /per epoch/, thus ending up with more than a single sample drawn from the model per data sample. In addition these samples are spread out over the training procedure, and so one would expect the samples in the later epochs are more accurate than those in the earlier epochs.
+
