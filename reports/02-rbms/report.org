@@ -1,8 +1,8 @@
 #+SETUPFILE: ../setup.org
 #+AUTHOR: Tor Erlend Fjelde
-#+Title: WORKING TITLE: Maximum Entropy models, Restricted Boltzmann Machines, and the whole shebag
+#+Title: WORKING TITLE: Maximum Entropy models, Restricted Boltzmann Machines, and the whole shebang
 
-* TODO Introduction
+* Introduction
 Maximum Entropy (MaxEnt) models are parametrizable probability distributions which are constructed from application of the Principle of Maximum Entropy. In general, a MaxEnt model of a discrete random variable is the distribution given by 
 \begin{equation*}
 p(x) = \frac{1}{Z} \exp( - E(x) )
@@ -18,7 +18,7 @@ with $F_i$ corresponding to the constraints enforced when applying the Principle
 
 These kind of models, being closely related to the concept of /information entropy/, sees frequent use in multiple areas (e.g. statistcal physics, natural language processing), sometimes under names such as Boltzmann distributions in the physics literature or Markov Random Fields in the graphical modelling literature.
 
-One class of such a model are called *Boltzmann machines*. These were first introduced as a method for learning unknown "soft" constraints within systems, or equivalently, learning the $F_i$ in the expression above of a distribution from the data. cite:ackley_1985 Due to the computational complexity of the Boltzmann machines, *restricted Boltzmann machines (RBMs)* were introduced, for which tractable approximate learning schemes are more easily obtainable.
+One class of such models are called *Boltzmann machines*. These were first introduced as a method for learning unknown "soft" constraints within systems, that is, learning the $F_i$ in the expression above of a distribution from the data. cite:ackley_1985 Due to the computational complexity of the Boltzmann machines, *Restricted Boltzmann machines (RBMs)* were introduced, for which tractable approximate learning schemes are more easily obtainable. In this paper we have a closer look at RBMs, theoretical justifications and the different methods used for training.
 
 * Background
 
@@ -328,7 +328,7 @@ potentially producing, with probability $A\Big((\mathbf{v}_{r - 1}, \mathbf{h}_{
 \end{equation*}
 We perform these swaps $R - 1$ times, starting with $p_{R - 1}, p_{R}$, finishing with $p, p_2$. Finally, we use the samples which are now in the first position as the samples from $p$.
 
-From Section [[*Metropolis-Hastings]] we can recognize this expression as the Metropolis-Hastings acceptance ratio with transition probabilities $f_r$ and $f_{r - 1}$, and this produces a valid sampling chain.cite:neal98_anneal_impor_sampl
+From Section [[*Metropolis-Hastings]] we can recognize this expression as the Metropolis-Hastings acceptance ratio with transition probabilities $f_r$ and $f_{r - 1}$, and this produces a chain which guarantees the detailed balance.cite:neal98_anneal_impor_sampl,Fischer_2015
 
 Even though there is no rigorous theoretical founding for why one would want to do this, one can intuitively see that as $T_r$ becomes larger, $p_r$ becomes more similar to the uniform distribution. This then leads to a larger sample-variance, thus increasing the /mixing rate/ of the Gibbs chain. This is also seen empirical by Neal.cite:neal98_anneal_impor_sampl Hence, we're left with less biased samples, and thus the gradient approximations from Eq. ref:eq:rbm-grads-sample-approx-sampler become less biased. Of course this comes at a cost of more computation.
 
@@ -373,13 +373,14 @@ All experiments in this section are carried out by the /insanely/ popular machin
 * Appendix
 ** Gaussian RBMs
 
-
-bibliographystyle:unsrt
-bibliography:../../references.bib
-
 * Footnotes
 
 [fn:2] It is worth noting that in some cases it is advised to also sample $\mathbf{h}$ to approximate the expectation, rather than using the $\mathbb{E}[h_{\mu} \mid \mathbf{v}] = p(H_{\mu} = 1 \mid \mathbf{v})$.cite:hinton2012practical But in general using $p(H_{\mu} = 1 \mid \mathbf{v})$ and only sample $\mathbf{v}$ is empirically shown to reduce variance of the approximation.cite:Fischer_2015
 
 [fn:1] In these cases, with $M = N$, we usually also make use of batch training with Stochastic Gradient Ascent over multiple epochs. This way we end up performing this sampling procedure once for each data sample /per epoch/, thus ending up with more than a single sample drawn from the model per data sample. In addition these samples are spread out over the training procedure, and so one would expect the samples in the later epochs are more accurate than those in the earlier epochs.
 
+
+bibliographystyle:unsrt
+bibliography:../../references.bib
+
+Fjelde, T. E., Restricted Boltzmann Machines, , (),  (2018). 
