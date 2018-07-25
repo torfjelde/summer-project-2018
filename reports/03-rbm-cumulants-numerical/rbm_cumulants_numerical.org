@@ -1,0 +1,135 @@
+#+SETUPFILE: ../setup.org
+#+Title: RBM cumulants: Numerical approximation
+#+Author: Tor Erlend Fjelde
+
+As seen before, we can expand the energy function as
+\begin{equation}\label{eq:visible-energy-cumulant-expansion}
+E(\mathbf{v}) = - \sum_{j}^{} a_j v_j - \sum_{\mu}^{} \sum_{n=1}^{\infty} \frac{\kappa_{\mu}^{(n)}}{n!} \Big( \sum_{j}^{} W_{j \mu} v_j \Big)^n
+\end{equation}
+And, with an interest in the second order interactions of the visibles, we were, due to reasons discussed before, interested in computing the following the series
+\begin{equation}\label{eq:second-order-interacts-full}
+\sum_{n=2}^{\infty} \frac{\kappa_{\mu}^{(n)}}{n!} \bigg[ \Big( W_{j_1 \mu} + W_{j_2 \mu} \Big)^n - \Big( W_{j_1 \mu} \Big)^n - \Big(W_{j_2 \mu}\Big)^n \bigg]
+\end{equation}
+with
+\begin{equation}\label{eq:kappa}
+\kappa_{\mu}^{(n + 1)} = \sigma^{(n)}(b_{\mu}) = \sum_{k=1}^{n} \big( -1 \big)^{k - 1} A_{n, k-1} \sigma (b_{\mu})^k \big( 1 - \sigma(b_{\mu}) \big)^{n + 1 - k}
+\end{equation}
+This general expression for the n-th order derivative can be found in cite:minai1993derivatives.
+
+Before we obtained a closed-form expression, we were looking to compute Eq. ref:eq:second-order-interacts-full using a numerical approximation to a truncation of the series. When doing so we ran into numerical issues, with the terms in the series growing, seemingly indefinitely, with increasing $n$. At the time we could not be entirely sure whether or not this was due to convergence occurring only for higher-order terms or if what we were seeing was due to numerical issues, as we did not have access to a ground-truth for $\kappa_{\mu}^{(n)}$.
+
+This motivated us to find an upper bound for the coefficients $\kappa_{\mu}^{(n)}$, which we could then use to test the numerical procedure. Letting
+\begin{equation*}
+\alpha_{\mu} = \max \left\{ \sigma(b_{\mu}), \big( 1 - \sigma(b_{\mu}) \big) \right\}
+\end{equation*}
+we observe
+\begin{equation*}
+\begin{split}
+  \left| \kappa_{\mu}^{(n + 1)} \right| &= \left| \sum_{k=0}^{n - 1} \big( - 1 \big)^k A_{n, k} \sigma(b_{\mu})^{k + 1} \big( 1 - \sigma(b_{\mu} \big)^{n - k} \right| \\
+  &\le \sum_{k=0}^{n - 1} \left| A_{n, k} \right| \left| \sigma(b_{\mu})^{k + 1} \big( 1 - \sigma(b_{\mu}) \big)^{n - k} \right| \\
+  & \le \sum_{k=0}^{n - 1} \left| A_{n, k} \right| \alpha_{\mu}^{k + 1} \alpha_{\mu}^{n - k} \\
+  &= \alpha_{\mu}^{n + 1} \sum_{k=0}^{n - 1} A_{n, k} \\
+  &= \alpha_{\mu}^{n + 1} n!
+\end{split}
+\end{equation*}
+where we've used the fact that
+\begin{equation*}\label{eq:eulerian-numbers-identity-factorial}
+A_{n, k} \ge 0, \quad \forall n \in \mathbb{N} \quad \text{and} \quad \sum_{k=0}^{n - 1} A_{n, k} = n!, \quad n \ge 1
+\end{equation*}
+Relating to the coefficient of the Taylor expansion for the energy in Eq. ref:eq:visible-energy-cumulant-expansion, we instead consider $\kappa_{\mu}^{(n)} / n!$:
+\begin{equation}\label{eq:kappa-bound}
+\frac{\left| \kappa_{\mu}^{(n)} \right|}{n!} \le \frac{\alpha_{\mu}^{n}}{n}
+\end{equation}
+Clearly $\alpha_{\mu} \in \big(\frac{1}{2}, 1 \big)$ for any $b_{\mu}$, hence this upper-bound decreases rapidly wrt. $n$.
+
+As noted earlier, we did not observe such a decrease. Using weights of a trained RBM, we observed that the bounds obtained above were not satisfied when using the numerical approximation for $n \ge 40$.[fn:1] This motivated further inspection into the intermediate computations, and we observed that the numerically computed Eulerian numbers quickly failed to satisfy the identity in Eq. ref:eq:eulerian-numbers-identity-factorial. The Eulerian numbers involves a combinatorial sum with different terms used in multiplication with different powers of $W_{j_1}$ and $W_{j_2}$, meaning we have to make use of floating point representations for large numbers. This quickly gives rise to numerical issues as seen above, and emphasizes the need to the closed-form expression.
+
+* Shorter
+We wanted to compute Eq. ref:eq:second-order-interacts-full numerically with a truncation of the series. At the time we did not have access to a ground-truth for these coefficients, thus we did not have any method for verifying the accuracy of the numerical results readily available. Letting
+\begin{equation*}
+\alpha_{\mu} = \max \left\{ \sigma(b_{\mu}), \big( 1 - \sigma(b_{\mu}) \big) \right\}
+\end{equation*}
+we observe
+\begin{equation*}
+\begin{split}
+  \left| \kappa_{\mu}^{(n + 1)} \right| &= \left| \sum_{k=0}^{n - 1} \big( - 1 \big)^k A_{n, k} \sigma(b_{\mu})^{k + 1} \big( 1 - \sigma(b_{\mu} \big)^{n - k} \right| \\
+  &\le \sum_{k=0}^{n - 1} \left| A_{n, k} \right| \left| \sigma(b_{\mu})^{k + 1} \big( 1 - \sigma(b_{\mu}) \big)^{n - k} \right| \\
+  & \le \sum_{k=0}^{n - 1} \left| A_{n, k} \right| \alpha_{\mu}^{k + 1} \alpha_{\mu}^{n - k} \\
+  &= \alpha_{\mu}^{n + 1} \sum_{k=0}^{n - 1} A_{n, k} \\
+  &= \alpha_{\mu}^{n + 1} n!
+\end{split}
+\end{equation*}
+where we've used the fact that
+\begin{equation*}\label{eq:eulerian-numbers-identity-factorial}
+A_{n, k} \ge 0, \quad \forall n \in \mathbb{N} \quad \text{and} \quad \sum_{k=0}^{n - 1} A_{n, k} = n!, \quad n \ge 1
+\end{equation*}
+Relating to the coefficient of the Taylor expansion for the energy in Eq. ref:eq:visible-energy-cumulant-expansion, we instead consider $\kappa_{\mu}^{(n)} / n!$:
+\begin{equation}\label{eq:kappa-bound}
+\frac{\left| \kappa_{\mu}^{(n)} \right|}{n!} \le \frac{\alpha_{\mu}^{n}}{n}
+\end{equation}
+Clearly $\alpha_{\mu} \in \big(\frac{1}{2}, 1 \big)$ for any $b_{\mu}$, which allowed us to make use of this bound to check the numerics.
+
+Using weights of a trained RBM, we observed that the bounds obtained above were not satisfied when using the numerical approximation for $n \ge 40$.[fn:1] This motivated further inspection into the intermediate computations, where we observed that the numerically computed Eulerian numbers quickly failed to satisfy the identity in Eq. ref:eq:eulerian-numbers-identity-factorial. The explicit form of the Eulerian numbers is given by
+\begin{equation*}
+A_{n, m} = \sum_{k=0}^{m} \big( -1 \big)^k {n + 1 \choose k} \big( m + 1 - k \big)^n
+\end{equation*}
+
+The Eulerian numbers involves a combinatorial sum with different terms used in multiplication with different powers of $W_{j_1}$ and $W_{j_2}$, meaning we have to make use of floating point representations for large numbers. This quickly gives rise to numerical issues as seen above, and emphasizes the need to the closed-form expression.
+
+* Final
+As described earlier, the second order interactions between $v_{j_1}$ and $v_{j_2}$ can be obtained by
+\begin{equation}\label{eq:second-order-interacts-full}
+\sum_{n=2}^{\infty} \frac{\kappa_{\mu}^{(n)}}{n!} \bigg[ \Big( W_{\mu j_1} + W_{\mu j_2} \Big)^n - \Big( W_{\mu j_1} \Big)^n - \Big(W_{\mu j_2}\Big)^n \bigg]
+\end{equation}
+
+At first, we tried computing Eq. ref:eq:second-order-interacts-full numerically with a truncation of the series. For this to be a good approximation, we would need the $\kappa_{\mu}^{(n)} / n!$ do decrease in magnitude at a greater rate than the increase of $\tilde{W}_{\mu, j_1, j_2}^{(n)} = \big( W_{j_1} + W_{j_2} \big)^n - \big( W_{j_1} \big)^n - \big( W_{j_2} \big)^n$, that is, we need
+\begin{equation*}
+\frac{\left| \kappa_\mu^{(n)} \right|}{n!} < \frac{1}{\tilde{W}_{\mu, j_1, j_2}^{(n)}}, \quad \forall n \ge N
+\end{equation*}
+for some $N \in \mathbb{N}$ for which it is tractable to compute the terms /at least/ up to $N$. Otherwise the higher-order terms have non-vanishing contributions to the series, making it difficult, if not impossible, to approximate the series using a truncation of the series.
+
+In Table ref:table:weights-and-kappas we can clearly see that this is not the case. Taking the second order interaction between $v_0$ and $v_{50}$ as an example, we observe that the higher order terms have non-vanishing contributions, e.g. for $n = 30$ we observed $\left| \kappa_{\mu}^{(n)} \right| / n!$ to be of the order $10^{-16}$ while the term with the weights was on the order of $10^{23}$. Upon further inspection, we observed that already for $n = 3$, the corresponding term in Eq. ref:eq:second-order-interacts-full, summed over all $\mu$, had a magnitude greater than 100, much larger than the inverse of the coefficients, and kept increasing with $n$. As the behavior is consistent even for small $n$, we can confidently rule out numerical errors as the source of this behavior.[fn:2] This emphasizes the importance of the closed-form expression derived earlier.
+
+#+name: table:weights-and-kappas
+|-----+-------------------------+-----------------|
+| $n$ | $\tilde{W}_{\mu, 0, 50}$ | $\kappa_{\mu}^{(n)} / n!$ |
+|-----+-------------------------+-----------------|
+|   0 |            1.828244e+02 |    1.584005e-02 |
+|   1 |            1.366378e+03 |    5.160094e-03 |
+|   2 |            9.400641e+03 |    1.059189e-03 |
+|   3 |            6.235173e+04 |    3.404044e-04 |
+|   4 |            4.060320e+05 |    7.457910e-05 |
+|   5 |            2.617930e+06 |    2.546630e-05 |
+|   6 |            1.678468e+07 |    6.539439e-06 |
+|   7 |            1.072612e+08 |    2.026445e-06 |
+|   8 |            6.841092e+08 |    5.519907e-07 |
+|   9 |            4.358113e+09 |    1.672967e-07 |
+|  10 |            2.774359e+10 |    4.830791e-08 |
+|  11 |            1.765382e+11 |    1.414494e-08 |
+|  12 |            1.123052e+12 |    4.089902e-09 |
+|  13 |            7.143163e+12 |    1.215321e-09 |
+|  14 |            4.542953e+13 |    3.606573e-10 |
+|  15 |            2.889079e+14 |    1.055642e-10 |
+|  16 |            1.837234e+15 |    3.434654e-11 |
+|  17 |            1.168314e+16 |    9.235904e-12 |
+|  18 |            7.429309e+16 |    3.244326e-12 |
+|  19 |            4.724258e+17 |    8.328190e-13 |
+|  20 |            3.004115e+18 |    3.037373e-13 |
+|  21 |            1.910284e+19 |    7.889327e-14 |
+|  22 |            1.214727e+20 |    2.815761e-14 |
+|  23 |            7.724292e+20 |    7.579412e-15 |
+|  24 |            4.911775e+21 |    2.581616e-15 |
+|  25 |            3.123331e+22 |    6.917720e-16 |
+|  26 |            1.986083e+23 |    2.337199e-16 |
+|-----+-------------------------+-----------------|
+
+
+
+bibliographystyle:unsrt
+bibliography:../references.bib
+
+* Footnotes
+
+[fn:2] We also verified the computation of the Eulerian numbers using the identity $\sum_{k=0}^{n-1} A_{n, k} = n!$, using longs for all integer computations, converting to 128-floating points only when absolutely needed.
+
+[fn:1] RBM with $16$ visible and hidden units, trained on a $16 \times 16$ Ising model with $T = 1.8$.
