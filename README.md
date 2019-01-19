@@ -1,5 +1,6 @@
 # summer-project-2018
 This is contains some of my work for the summer project 2018 under supervision by Luigi del Debbio.
+The focus was on learning, and eventually I *attempted* to help a research group out with the (now) published research in https://arxiv.org/abs/1810.11503.
 
 ## Reports
 Unfortunately there were no good reason to finish the reports, thus many of them are still in an unfinished state.
