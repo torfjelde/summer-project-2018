@@ -1,0 +1,334 @@
+#+SETUPFILE: ../reports/setup.org
+#+Title: RBM cumulants
+#+Author: Tor Erlend Fjelde
+
+* Notation
+- $K(t)$ denotes the cumulant-generating function of a probability distribution
+- $\kappa^{(n)} = \partial_t^n|_{t = 0} K(t)$ denotes the n-th cumulant of a probability distribution
+- $E(\mathbf{v}, \mathbf{h}) = - \sum_{j}^{} a_j(v_j) - \sum_{\mu}^{} b_{\mu}(h_{\mu} - \sum_{j}^{} \sum_{\mu}^{} v_j W_{j \mu} h_{\mu}$ is the energy
+- $a_j(v_j)$ denotes the bias of $v_{j}$ in the energy function $E(\mathbf{v}, \mathbf{h})$
+- $b_{\mu}(h_{\mu})$ denotes the bias of $h_{\mu}$ in the energy function $E(\mathbf{v}, \mathbf{h})$
+- $q_{\mu}(h_{\mu}) = e^{b_{\mu}(h_{\mu})} / Z_{\mu}$, where 
+- $K_{\mu}(t) = \log \sum_{h_{\mu}}^{} q_{\mu} (h_{\mu}) e^{t h_{\mu}}$ denotes cumulative-generating function for $q_{\mu}$
+- $\kappa_{\mu}^{(n)}$ denote the n-th cumulant of the distribution $q_{\mu}(h_{\mu})$
+- $A_{n, m}$ denotes the /Eulerian number/ corresponding to $n$ and $m$
+* Cumulants
+Cumulants of a distribution are useful since
+- they provide an alternative to moments of the distribution,
+- the moments determine cumulants in the sense that /any two probability distributions whose moments are identical will have identical cumulants/, and the converse is also true.
+
+#+name: def:cumulant-generating-function
+#+begin_definition :title ""
+The cumulants of a random variable $X$ can be defined using the *cumulant-generating-funcion* $K(t)$, which is
+\begin{equation*}
+K(t) = \log M(t) = \log \mathbb{E}[e^{t X}] 
+\end{equation*}
+where $M(t) = \mathbb{E}[e^{t X}]$ is the /moment-generating function/.
+#+end_definition
+
+#+name: def:cumulants
+#+begin_definition :title ""
+The *cumulants* $\kappa^{(n)}$ are obtained from a power series expansion of the [[ref:def:cumulant-generating-function][cumulant generating function]]:
+\begin{equation*}
+K(t) = \sum_{n=1}^{\infty} \kappa^{(n)} \frac{t^n}{n!} = \mu t + \sigma^2 \frac{t^2}{2} + \dots 
+\end{equation*}
+This is a Mclauring series, hence
+\begin{equation*}
+\kappa^{(n)}  = \frac{\partial^n }{\partial t^n}\Big|_{t = 0} K(t) = K^{(n)}(0)
+\end{equation*}
+#+end_definition
+
+* RBMs
+As seen from Eqs. 203-207 in cite:mehta18_high_bias_low_varian_introd, we can define a energy function which only depends on $\mathbf{v}$, by letting
+\begin{equation*}
+p(\mathbf{v}) := \frac{1}{Z} e^{-E(\mathbf{v})} = \frac{1}{Z} \sum_{\mathbf{h}}^{} e^{- E(\mathbf{v}, \mathbf{h})}
+\end{equation*}
+Therefore,
+\begin{equation*}\label{eq:visible-energy}
+\begin{split}
+  E(\mathbf{v}) &=  - \log \sum_{\mathbf{h}}^{} e^{- E(\mathbf{v}, \mathbf{h})} \\
+  &= - \log \sum_{\mathbf{h}}^{} \exp \Big( a_j(v_j) + b_{\mu}(h_{\mu}) + v_j W_{j \mu} h_{\mu} \Big) \\
+  &= - \log \exp \Big( \sum_{j}^{} a_j(v_j) \Big) \\
+  & \quad - \log \sum_{\mathbf{h}}^{} \exp \Big( \sum_{\mu}^{} b_{\mu} (h_{\mu}) + \sum_{j}^{}v_j W_{j \mu} h_{\mu} \Big) \\
+  &= - \log \exp \Big( \sum_{j}^{} a_j(v_j) \Big) \\
+  & \quad - \log \prod_{\mu=1}^{|\mathcal{H}|} \sum_{h_{\mu}}^{} \exp \Big( b_{\mu}(h_{\mu}) \Big) \exp \Big( \sum_{j}^{} v_j W_{j \mu} h_{\mu} \Big) \\
+  &= - \sum_{j}^{} a_j(v_j) \Big) \\
+  & \quad - \sum_{\mu}^{} \log \sum_{h_{\mu}}^{} \exp \Big( b_{\mu}(h_{\mu}) \Big) \exp \Big( \sum_{j}^{} v_j W_{j \mu} h_{\mu} \Big)
+\end{split}
+\end{equation*}
+If we then introduce the distributions
+\begin{equation*}
+q_{\mu}(h_{\mu}) = \frac{1}{Z_{\mu}} e^{b_{\mu}(h_{\mu})}
+\end{equation*}
+for each $h_{\mu}$, then the corresponding [[ref:def:cumulant-generating-function][cumulant-generating function]] is given by
+\begin{equation*}
+K_{\mu}(t) = \log M_{\mu}(t) = \log \mathbb{E}[e^{t h_{\mu}}] =  \log \sum_{h_{\mu}}^{} q_{\mu}(h_{\mu}) e^{t h_{\mu}}
+\end{equation*}
+And using the expansion of $K_{\mu}$ seen in the Definition ref:def:cumulants, we get
+\begin{equation*}
+K_{\mu}(t) = \sum_{n}^{} \kappa_{\mu}^{(n)} \frac{t^n}{n!}
+\end{equation*}
+Observe that if $t = \sum_{j}^{} v_j W_{j \mu}$, then we have
+\begin{equation*}
+K_{\mu}\Big(\sum_{j}^{} v_j W_{j \mu}\Big) = \log \sum_{h_{\mu}}^{} \exp \Big( b_{\mu}(h_{\mu}) \Big) \exp \Big( \sum_{j}^{} v_j W_{j\mu} h_{\mu} \Big)
+\end{equation*}
+Subsituting into Eq. ref:eq:visible-energy, we get
+\begin{equation*}\label{eq:visible-energy-cumulant-expansion}
+\begin{split}
+  E(\mathbf{v}) &= - \sum_{j}^{} a_j(v_j) - \sum_{\mu}^{} K_{\mu}\Big(\sum_{j}^{} v_j W_{j \mu}\Big) \\
+  &= - \sum_{j}^{} a_j(v_j) - \sum_{\mu}^{} \sum_{n}^{} \kappa_{\mu}^{(n)} \frac{\Big( \sum_{j}^{} v_j W_{j \mu} \Big)^n}{n!} \\
+  &= - \sum_{j}^{} a_j(v_j) - \sum_{\mu}^{} \kappa_{\mu}^{(1)} \sum_{i}^{} W_{i \mu} v_i \\
+  & \quad - \frac{1}{2} \sum_{\mu}^{} \kappa_{\mu}^{(2)} \sum_{i, j}^{} W_{i \mu} W_{j \mu} v_i v_j  - \dots
+\end{split}
+\end{equation*}
+From this expression, we can see that an RBM can capture /moments/ of arbitary order for the random variables $V_j$.
+
+It's important to remember that in this expansion from Definition ref:def:cumulants we're expanding around the point $t = 0$, which in this case would be
+\begin{equation*}
+\sum_{j}^{} W_{j \mu} v_j = 0, \quad \forall \mu = 1, \dots, |\mathcal{H}|
+\end{equation*}
+
+* Bernoulli RBM
+** The cumulants
+Now suppose we are using a Bernoulli RBM, that is,
+\begin{equation*}
+a_j(v_j) = a_j v_j, \qquad b_{\mu}(h_{\mu}) = b_{\mu} h_{\mu}
+\end{equation*}
+Then
+\begin{equation*}
+q_{\mu}(h_{\mu}) = \frac{e^{b_{\mu} h_{\mu}}}{1 + e^{b_{\mu}}}
+\end{equation*}
+and therefore,
+\begin{equation*}
+\begin{split}
+  K_{\mu}(t) &:= \log \sum_{h_{\mu}}^{} q_{\mu}(h_{\mu}) e^{t h_{\mu}} \\
+  &= \log \Big( q_{\mu}(0) + q_{\mu}(1) e^t \Big) \\
+  &= \log \Big( 1 + e^{b_{\mu} + t} \Big) - \log \Big( 1 + e^{b_{\mu}} \Big)
+\end{split}
+\end{equation*}
+Thus,
+\begin{equation}\label{eq:first-cumulant}
+\begin{split}
+  \frac{\partial K_{\mu}}{\partial t} &= \frac{\partial }{\partial t} \log \Big( 1 + e^{b_{\mu} + t} \Big) \\
+  &= \frac{e^{b_{\mu} + t}}{1 + e^{b_{\mu} + t}} \\
+  &= \sigma \big(b_{\mu} + t \big)
+\end{split}
+\end{equation}
+Letting $z = b_{\mu} + t$, we observe that we have the relation
+\begin{equation}\label{eq:cumulant-generating-derivates-sigmoid}
+K_{\mu}^{(n + 1)}(z) = \sigma^{(n)}(z)
+\end{equation}
+This is useful, since one can obtain a general expression for the n-th derivative of the sigmoid function $\sigma(z)$. Remark 5 in cite:minai1993derivatives tells us
+\begin{equation}\label{eq:sigmoid-nth-derivative}
+\sigma^{(n)}(z) = \sum_{k=1}^{n} \big( -1 \big)^{k - 1} A_{n, k - 1} \sigma(z)^k \big( 1 - \sigma(z) \big)^{n + 1 - k}
+\end{equation}
+where $A_{n, k - 1}$ are known as the /Eulerian numbers/, which can easily be computed using the recursion
+\begin{equation}\label{eq:eulerian-recursion}
+A_{n, m} = (n - m) A_{n - 1, m - 1} + (m + 1) A_{n - 1, m}
+\end{equation}
+or in explicit form,
+\begin{equation*}
+A_{n, m} = \sum_{k=0}^{m} \big( -1 \big)^k {n + 1 \choose k} \big( m + 1 - k \big)^n
+\end{equation*}
+See Table 1 in cite:minai1993derivatives for an example of some Eulerian numbers.
+Substituting Eq. ref:eq:cumulant-generating-derivates-sigmoid into Eq. ref:eq:sigmoid-nth-derivative, we get
+\begin{equation*}
+K_{\mu}^{(n + 1)}(z) = \sum_{k=1}^{n} \big( -1 \big)^{k - 1} A_{n, k - 1} \sigma(z)^k \big( 1 - \sigma(z) \big)^{n + 1 - k}
+\end{equation*}
+as a general expression for the (n + 1)-th derivative of the cumulant-generating function. Substituting back in $z = b_{\mu} + t$, and letting $t = 0$, we get the general expression for the (n + 1)-th cumulant
+\begin{equation}\label{eq:binary-nth-cumulant}
+\kappa_{\mu}^{(n + 1)} = \sum_{k=1}^{n} \big( -1 \big)^{k - 1} A_{n, k - 1} \sigma(b_{\mu})^k \big( 1 - \sigma(b_{\mu}) \big)^{ n + 1 - k}
+\end{equation}
+** Second order interactions between visible units
+This section is due to cite:cossu18_machin_learn_deter_dynam_param, which is the group I tagged along with for my summer project.
+
+With Eq. ref:eq:binary-nth-cumulant we can rewrite the expansion of $E(\mathbf{v})$ in Eq. ref:eq:visible-energy-cumulant-expansion as
+\begin{equation*}
+E(\mathbf{v}) = - \sum_{j}^{} a_j v_j - \sum_{\mu}^{} \sum_{n=1}^{\infty} \frac{\kappa_{\mu}^{(n)}}{n!} \Big( \sum_{j}^{} W_{j \mu} v_j \Big)^n
+\end{equation*}
+Say we're interested in the /second order interactions/ between two visible units $v_{j_1}$ and $v_{j_2}$. We then observe that every n-th term with $n \ge 2$ in the above sum will contribute to the second order interactions between $v_{j_1}$ and $v_{j_2}$ by summing over all possible
+\begin{equation*}
+W_{i_1 \mu} W_{i_2 \mu} \cdots W_{i_n \mu} v_{i_1} v_{i_2} \cdots v_{i_n}
+\end{equation*}
+with $i_m \in \left\{ j_1, j_2 \right\}$, $m = 1, \dots, n$ and excluding the case where $i_m = j_1, \forall m$ and $i_m = j_2, \forall m$, as these cases will only contribute to the first order moment.
+
+Suppose we want to assign $2 \le k < n$ of these $i_1, \dots, i_n$ to $j_1$ and the rest to $j_2$, then we have $n \choose k$ ways of making these assignments. Therefore the sum over all possible combinations above can be compactly written
+
+\begin{equation*}
+\begin{split}
+  & \Bigg( \sum_{i_1 \in \left\{ j_1, j_2 \right\}}^{} \dots \sum_{i_n \in \left\{ j_1, j_2 \right\}}^{} W_{i_1 \mu} \cdots W_{i_n} \Bigg) - \big( W_{j_1 \mu} \big)^n - \big(W_{j_2 \mu}\big)^n \\
+= & \Bigg( \sum_{m=0}^{n} {n \choose m} \big( W_{j_1 \mu} \big)^m \big( W_{j_2 \mu} \big)^{n - m} \Bigg) - \big( W_{j_1 \mu} \big)^n - \big(W_{j_2 \mu}\big)^n \\
+= & \Big( W_{j_1 \mu} + W_{j_2 \mu} \Big)^n - \big( W_{j_1 \mu} \big)^n - \big(W_{j_2 \mu}\big)^n
+\end{split}
+\end{equation*}
+where we have made use of the Binomial theorem in the last equality. Hence, all terms involving second order interactions between $v_{j_1}$ and $v_{j_2}$ is given by
+\begin{equation*}\label{eq:second-order-interacts-full}
+\sum_{\mu}^{} \sum_{n=2}^{\infty} \frac{\kappa_{\mu}^{(n)}}{n!} \bigg[ \Big( W_{j_1 \mu} + W_{j_2 \mu} \Big)^n - \Big( W_{j_1 \mu} \Big)^n - \Big(W_{j_2 \mu}\Big)^n \bigg]
+\end{equation*}
+Furthermore, some clever people noticied that this can be expressed using the shift-operator
+\begin{equation*}
+\begin{split}
+  & \sum_{\mu }^{} \sum_{n=2}^{\infty} \bigg[ \Big( W_{i_1 \mu} + W_{j_2 \mu} \Big)^n - \Big( W_{j_1 \mu} \Big)^n - \Big( W_{j_2 \mu} \Big)^n \bigg] \frac{1}{n!} \partial_t^n K_{\mu}(t) \big|_{t = 0} \\
+  = \quad & \sum_{\mu}^{} \sum_{n=0}^{\infty} \bigg[ \Big( W_{i_1 \mu} + W_{j_2 \mu} \Big)^n - \Big( W_{j_1 \mu} \Big)^n - \Big( W_{j_2 \mu} \Big)^n \bigg] \frac{1}{n!} \partial_t^n K_{\mu}(t) \big|_{t = 0} \\
+  & - \sum_{\mu}^{} \bigg[ \Big( W_{i_1 \mu} + W_{j_2 \mu} \Big) - \Big( W_{j_1 \mu} \Big) - \Big( W_{j_2 \mu} \Big) \bigg] \partial_t K_{\mu}(t)\big|_{t = 0} \\
+  & - \sum_{\mu}^{} \bigg[ 1 - 1 - 1 \bigg] K_{\mu}(0) \\
+  = \quad & \sum_{\mu}^{} \bigg[ \exp\Big( \big(W_{j_1 \mu} + W_{j_2 \mu}\big) \partial_t \Big) - \exp \Big( W_{j_1 \mu} \partial_t \Big) - \exp \Big( W_{j_2 \mu} \partial t \Big) + 1 \bigg] K_{\mu}(t) \big|_{t = 0}
+\end{split}
+\end{equation*}
+where the negative term involving $\partial_t K_{\mu}(t)$ vanishes since the coefficient is zero. The shift-operator has the property $\exp  \big( a \ \partial x \big) f(x) = f( a + x)$, hence the above expression simply becomes
+\begin{equation*}\label{eq:closed-form-second-order-interactions}
+\sum_{\mu}^{} \bigg[ K_{\mu} \Big( W_{j_1 \mu} + W_{j_2 \mu} \Big) - K_{\mu} \Big( W_{j_1 \mu} \Big) - K_{\mu} \Big( W_{j_2 \mu} \Big ) + K_{\mu}(0) \bigg]
+\end{equation*}
+Providing us with a closed form expression for the second order interaction between visible units for a Bernoulli RBM.
+** Issues with numerical approximation to series
+Before the insanely clever members of the Edinburgh Lattice QCD team obtained the closed form expression for the second order interactions seen in Eq. ref:eq:closed-form-second-order-interactions, we attempted to compute truncated series using Eq. ref:eq:second-order-interacts-full. Attempting with orders up to $n \approx 50$, the terms would blow up, giving us unreasonable results. In this section we investigate why the numerical computations turned out to be insufficient.
+
+*** Bounding the coefficients
+First we observed that one can obtain an upper-bound for the magintude of the coefficients in the expansion of Eq. ref:eq:visible-energy-cumulant-expansion. As noted in Eq. ref:eq:binary-nth-cumulant, we can write the (n + 1)-th cumulant as
+\begin{equation*}
+\kappa_{\mu}^{(n + 1)} = \sum_{k=1}^{n} \big( -1 \big)^{k - 1} A_{n, k-1} \sigma (b_{\mu})^k \big( 1 - \sigma(b_{\mu}) \big)^{n + 1 - k}
+\end{equation*}
+Or equivalently, by shifting $k$ by $-1$,
+\begin{equation*}
+\kappa_{\mu}^{(n + 1)} = \sum_{k = 0}^{n - 1} \big( -1 \big)^k A_{n, k} \sigma(b_{\mu})^{k + 1} \big( 1 - \sigma(b_{\mu}) \big)^{n - k}
+\end{equation*}
+Let
+\begin{equation*}
+\alpha_{\mu} = \max \left\{ \sigma(b_{\mu}), \big( 1 - \sigma(b_{\mu}) \big) \right\}
+\end{equation*}
+we observe
+\begin{equation*}
+\begin{split}
+  \left| \kappa_{\mu}^{(n + 1)} \right| &= \left| \sum_{k=0}^{n - 1} \big( - 1 \big)^k A_{n, k} \sigma(b_{\mu})^{k + 1} \big( 1 - \sigma(b_{\mu} \big)^{n - k} \right| \\
+  &\le \sum_{k=0}^{n - 1} \left| A_{n, k} \right| \left| \sigma(b_{\mu})^{k + 1} \big( 1 - \sigma(b_{\mu}) \big)^{n - k} \right| \\
+  & \le \sum_{k=0}^{n - 1} \left| A_{n, k} \right| \alpha_{\mu}^{k + 1} \alpha_{\mu}^{n - k} \\
+  &= \alpha_{\mu}^{n + 1} \sum_{k=0}^{n - 1} A_{n, k} \\
+  &= \alpha_{\mu}^{n + 1} n!
+\end{split}
+\end{equation*}
+where we've used the fact that
+\begin{equation*}\label{eq:eulerian-numbers-identity-factorial}
+A_{n, k} \ge 0, \quad \forall n \in \mathbb{N} \quad \text{and} \quad \sum_{k=0}^{n - 1} A_{n, k} = n!, \quad n \ge 1
+\end{equation*}
+Relating to the coefficient of the Taylor expansion for the energy in Eq. ref:eq:visible-energy-cumulant-expansion, we instead consider $\kappa_{\mu}^{(n + 1)} / (n + 1)!$:
+\begin{equation*}\label{eq:kappa-bound}
+\frac{\left| \kappa_{\mu}^{(n + 1)} \right|}{(n + 1)!} \le \frac{\alpha_{\mu}^{n + 1}}{n + 1}
+\end{equation*}
+Clearly $\alpha_{\mu} \in \big(\frac{1}{2}, 1 \big)$ for $b_{\mu}$ in any bounded interval, hence this upper-bound decreases rapidly wrt. $n$.
+*** Initial results
+Unfortunately, the upper bound provided by $\alpha_{\mu}$ cannot necessarily tell us anything about whether or not higher-order terms will have non-vanishing contributions, unless $\big( W_{j_1 \mu} \big)^{n_1} \big( W_{j_2 \mu} \big)^{n_2} \le \frac{1}{\alpha^n}$, but it can serve as verifaction of the numerical procedure used by ensuring that the bounds hold for all $n$.
+
+Using the weights of a RBM trained on a $16 \times 16$ Ising model with $T = 1.8$, we computed the second order interactions using Eq. ref:eq:second-order-interacts-full and then we computed the corresponding $\{ \alpha_{\mu} \}$. In this particular case, we observed that the bounds established in Eq. ref:eq:kappa-bound were preserved for $n \le 39$, but not for $n > 39$.[fn:3] 
+
+#+begin_note
+As a response, we computed the identity in Eq. ref:eq:eulerian-numbers-identity-factorial for these values of $n$, and observed that the identity failes for large $n$, and for $n = 40$ in particular the resulting value was /negative/.
+#+end_note
+
+Hence the numerical approximation fails due to numerical errors, especially errors accumulated by the intermediate computations of the Eulerian numbers.
+
+*** Results after improvement
+In these experiments, we were using weights obtained from RBMs trained on different 2D Ising models.
+
+A member of the research group suggested we have a look at the magnitudes of the weights in comparison with upper bounds on the coefficients of the series; if the magnitudes of the weights were greater than the upper bounds on the coefficients, then the $W_{j_1 \mu}$ seen earlier will dominate. In our trained RBMs, several $W_{j_1 \mu}$ had magnitudes greater than $1$. Therefore we would expect higher-order terms to have non-negligible contributions to the series, that is, truncated series are not necessarily expected to provide a good approximation.
+
+We could also observe that computing $\kappa_{\mu}^{(n)} / n!$ for $n \le 40$ numerically, the upper-bounds where satisfied, but when consdering $n = 50$, for multiple values of $b_{\mu}$, $\kappa^{(n)} / n!$ were larger than the respective upper-bounds. This made us suspicious of numerical errors in the intermediate computations leading to significant errors in the computation of $\kappa^{(n)} / n!$. Suspecting that this had something to do with the computation of the Eulerian numbers, since this computation involves large binomial series, we decided to check if the following was satisfied
+\begin{equation*}
+\sum_{m=0}^{n - 1} A_{n, m} = n!
+\end{equation*}
+For $n = 50$ we observed $\sum_{m=0}^{n - 1} A_{n, m}$ to be several orders of magnitude larger than $n!$. Hence, numerical errors also play a part in the failure of approximating the infinite series of Eq. ref:eq:second-order-interacts-full using numerically computed truncated series.[fn:2]
+
+*** Note on absolute convergence and the upper-bound
+We know
+\begin{equation*}
+\left| \sum_{\mu}^{} \frac{\kappa_{\mu}^{(n)}}{n!} (W_{j_1 {\mu}})^{n_1} (W_{j_2 \mu})^{n_2} \right| \le \sum_{\mu}^{} \frac{\alpha_{\mu}^n}{n} \Big| (W_{j_1 \mu})^{n_1} (W_{j_2 \mu})^{n_2} \Big|
+\end{equation*}
+In the following we consider a specific $\mu$, and therefore drop $\mu$ form the notation. We observe that the terms in the series defines a convergent sequence in the case where
+\begin{equation*}
+\frac{\alpha^n}{n} (W_{j_1})^{n_1} (W_{j_2})^{n_2} < 1
+\end{equation*}
+where $n_1 + n_2 = n$, or rather,
+\begin{equation*}
+(W_{j_1})^{n_1} (W_{j_2})^{n_2} < \frac{n}{\alpha^n}
+\end{equation*}
+which, in the case
+\begin{equation*}
+(W_{j_1})^{n_1} (W_{j_2})^{n_2} > 1
+\end{equation*}
+For every $x \in \mathbb{R}$ such that $x > 1$, we know
+\begin{equation*}
+\exists N \in \mathbb{N} : \quad x^n > n, \quad \forall n > N
+\end{equation*}
+Hence, the above is true if and only if
+\begin{equation*}
+\alpha^n (W_{j_1})^{n_1} (W_{j_2})^{n_2} < 1
+\end{equation*}
+Therefore, for this to define an /absolutely/ convergent sequence, we $\alpha^n$ to be smaller than the inverse of the absolute value of the weights.
+
+Therefore the question is; *can we improve this bound*, and then show that a series which ought to have convergent coefficients does /not/ have this when using numerical approximation?
+
+* TODO Further work: partial sums
+Suppose $n \in \text{Odds}$, then we will have a an odd number of terms. Let
+\begin{equation*}
+\begin{split}
+  S_1 &= \sum_{k=0}^{(n / 2) - 2} \big( -1 \big)^k A_{n, k} \sigma^k \big( 1 - \sigma^k \big)^{n - 1 - k} \\
+  S_2 &= \sum_{k=(n / 2)}^{n - 1} \big( -1 \big)^k A_{n, k} \sigma^k \big( 1 - \sigma^k \big)^{n - 1 - k} 
+\end{split}
+\end{equation*}
+Then we can write
+\begin{equation*}
+\begin{split}
+  \kappa_{\mu}^{(n)} &= S_1 + S_2 + \big( -1 \big)^{n / 2} A_{n, (n / 2)} \sigma^{(n / 2) - 1} \big( 1 - \sigma \big)^{(n / 2) - 1} \\
+  &= S_1 + S_2 + A_{n, (n / 2)} \sigma^{(n / 2) - 1} \big( 1 - \sigma \big)^{(n / 2) - 1}
+\end{split}
+\end{equation*}
+
+#+begin_note
+$A_{n, (n / 2)}$ is the largest Eulerian number of any $n - 1 \in \text{Odds}$, hence this term is dominated by $\sigma$.
+#+end_note
+
+Further, due to the 
+$n \in \text{Odds}$:
+\begin{equation*}
+\sum_{k=1}^{n} \big( -1 \big)^{k - 1} A_{n, k -1} \sigma^{k + 1} \big( 1 - \sigma \big)^{n - k}
+\end{equation*}
+Then
+\begin{equation*}
+S_1 = \sum_{k=1}^{(n - 1) / 2} \big( -1 \big)^{k - 1} A_{n, k - 1} \sigma^{k + 1} \big( 1 - \sigma \big)^{n - k}
+\end{equation*}
+\begin{equation*}
+\begin{split}
+  S_2 &= \sum_{k = (n + 3) / 2}^{n} \big( -1 \big)^{k - 1} A_{n, k - 1} \sigma^{k + 1} \big( 1 - \sigma \big)^{n - k}
+\end{split}
+\end{equation*}
+Letting $k' = k - \frac{n + 1}{2}$, we have $k = k' + \frac{n + 1}{2}$, thus
+\begin{equation*}
+\sum_{k=1}^{(n - 1) / 2} \big( -1 \big)^{n - k - 1} A_{n, n - 1 - k} \sigma^{n - k} \big( 1 - \sigma \big)^{k + 1}
+\end{equation*}
+which is just
+\begin{equation*}
+\sum_{k=1}^{(n - 1)/2} \big( -1 \big)^{k - 1} A_{n, k - 1} \sigma^{n - k} \big( 1 - \sigma \big)^{k + 1}
+\end{equation*}
+Hence,
+\begin{equation*}
+S_1 + S_2  = \sum_{k=1}^{(n - 1) / 2} \big( -1 \big)^{k - 1} A_{n, k - 1} \Big[ \sigma^{k + 1} \big( 1 - \sigma \big)^{n - k} + \sigma^{n - k} \big( 1 - \sigma \big)^{k + 1} \Big]
+\end{equation*}
+** Ideas
+1. Separate into two sums $S_1$ and $S_2$ plus an extra term corresponding to the middle Eulerian number, which also is the /dominant/ Eulerian number
+2. Observe that $S_1$ and $S_2$ can be combined to produce a single sum with
+   \begin{equation*}
+   \sigma^a \big( 1 - \sigma \big)^{b - a} - \sigma^{b - a} \big( 1 - \sigma \big)^{a}
+   \end{equation*}
+   for some $a, b \in \mathbb{N}$.
+3. Obtain stricter inequality
+4. Do same for $n \in \text{Evens}$, but ignore middle term
+
+bibliographystyle:unsrt
+bibliography:../references.bib
+
+* Footnotes
+
+[fn:3] 128-bit floating points were used for all computations.
+
+[fn:2] 128-bit floating points were used for all computations.
+
+[fn:1] Unless there is some non-obvious structure in the Eulerian numbers such that the alternating signs cancel. At a first glance this seems extremely unlikely, but worth noting that the possibility is not as of yet ruled out.
