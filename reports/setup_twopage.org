@@ -1,2 +1,27 @@
-#+INCLUDE: setup.org
 #+LaTeX_CLASS_OPTIONS: [twocolumn]
+
+#+LATEX_header: \setlength{\columnsep}{0.75cm}
+
+#+LaTeX_header: \usepackage{listings}
+#+LaTeX_header: \usepackage{amsmath}
+#+LaTeX_header: \usepackage{amssymb}
+#+LaTeX_header: \usepackage{physics}
+#+LaTeX_header: \usepackage{cancel}
+#+LaTeX_header: \usepackage{mathrsfs}
+#+LaTeX_header: \usepackage[]{algorithm2e}
+
+
+#+LATEX_header: \usepackage{abstract} % Allows abstract customization
+#+LATEX_header: \renewcommand{\abstractnamefont}{\normalfont\bfseries} % Set the "Abstract" text to bold
+#+LATEX_header: \renewcommand{\abstracttextfont}{\normalfont\small\itshape} % Set the abstract itself to small italic text
+
+#+LaTeX_header: \usepackage[margin=1.5cm]{geometry}
+
+#+LaTeX_header: \usepackage{amsthm}
+#+LaTeX_header: \theoremstyle{theorem}
+#+LaTeX_header: \newtheorem{lemma}{Lemma}[section]
+#+LaTeX_header: \newtheorem{remark}{Remark}[section]
+#+LaTeX_header: \theoremstyle{definition}
+#+LaTeX_header: \newtheorem{definition}{Definition}[section]
+
+
